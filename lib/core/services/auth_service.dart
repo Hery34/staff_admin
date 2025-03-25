@@ -13,27 +13,37 @@ class Credential {
 class AuthService extends ChangeNotifier {
   final _supabase = SupabaseConfig.supabase;
   User? _currentUser;
+  bool _isLoading = false;
 
   User? get currentUser => _currentUser;
+  bool get isLoading => _isLoading;
 
   Future<String> login(Credential credential) async {
     try {
+      _isLoading = true;
+      notifyListeners();
+
       final response = await _supabase.auth.signInWithPassword(
         email: credential.email,
         password: credential.password,
       );
       _currentUser = response.user;
-      notifyListeners();
       return "Vous êtes connecté !";
     } on AuthException catch (e) {
       return e.message;
     } catch (e) {
       return "Une erreur est survenue lors de la connexion";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   Future<String> resetPassword(String email) async {
     try {
+      _isLoading = true;
+      notifyListeners();
+
       final redirectUrl = kIsWeb 
           ? 'http://localhost:3000/reset-password'  // URL de développement web
           : 'io.supabase.annexx://reset-callback/';
@@ -47,13 +57,40 @@ class AuthService extends ChangeNotifier {
       return e.message;
     } catch (e) {
       return "Une erreur est survenue lors de l'envoi de l'email";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  Future<void> logout() async {
-    await _supabase.auth.signOut();
-    _currentUser = null;
-    notifyListeners();
+  Future<String> logout() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Vérifier si l'utilisateur est connecté
+      final session = await _supabase.auth.currentSession;
+      if (session == null) {
+        return "Vous n'êtes pas connecté";
+      }
+
+      // Déconnexion de Supabase
+      await _supabase.auth.signOut();
+      
+      // Réinitialisation de l'état
+      _currentUser = null;
+      
+      return "Déconnexion réussie";
+    } on AuthException catch (e) {
+      debugPrint('Erreur AuthException lors de la déconnexion: ${e.message}');
+      return e.message;
+    } catch (e) {
+      debugPrint('Erreur lors de la déconnexion: $e');
+      return "Une erreur est survenue lors de la déconnexion";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> updatePassword(
@@ -62,6 +99,9 @@ class AuthService extends ChangeNotifier {
     String refreshToken,
   ) async {
     try {
+      _isLoading = true;
+      notifyListeners();
+
       final session = await _supabase.auth.recoverSession(refreshToken);
       await _supabase.auth.updateUser(
         UserAttributes(
@@ -70,6 +110,9 @@ class AuthService extends ChangeNotifier {
       );
     } catch (e) {
       throw "Erreur lors de la mise à jour du mot de passe: ${e.toString()}";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 } 

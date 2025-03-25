@@ -47,6 +47,9 @@ class FireAlertService extends ChangeNotifier {
         try {
           final reportJson = Map<String, dynamic>.from(json);
           
+          // Debug log for alert type
+          debugPrint('Report ${json['id']} - Alert type: ${json['alert_type']}');
+          
           // Add agent names
           if (json['created_by_agent'] != null) {
             final firstname = json['created_by_agent']['firstname'];

@@ -15,9 +15,30 @@ class AdminHomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<AuthService>().logout();
-              Navigator.of(context).pushReplacementNamed('/login');
+            onPressed: () async {
+              try {
+                final result = await context.read<AuthService>().logout();
+                if (!context.mounted) return;
+                
+                if (result == "Déconnexion réussie") {
+                  Navigator.of(context).pushReplacementNamed('/login');
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Une erreur est survenue lors de la déconnexion"),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
           ),
         ],

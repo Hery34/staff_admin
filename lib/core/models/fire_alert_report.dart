@@ -90,19 +90,37 @@ class FireAlertReport {
     : 'Non fermé';
 
   static AlertType _parseAlertType(String? value) {
-    switch (value?.toLowerCase()) {
+    if (value == null) {
+      debugPrint('Alert type is null');
+      return AlertType.alerte;
+    }
+
+    final normalizedValue = value.toLowerCase().trim();
+    debugPrint('Parsing alert type: "$normalizedValue"');
+
+    switch (normalizedValue) {
       case 'fausse alerte':
         return AlertType.fausseAlerte;
       case 'incendie maitrisable':
+      case 'incendie maîtrisable':  // Ajout de la variante avec accent
         return AlertType.incendieMaitrisable;
       case 'incendie hors de contrôle':
-        return AlertType.incendieHorsControle;
       case 'incendie hors de controle':
         return AlertType.incendieHorsControle;
       case 'alerte':
         return AlertType.alerte;
       default:
-        debugPrint('Alert type not recognized: $value');
+        debugPrint('Alert type not recognized: "$value" (normalized: "$normalizedValue")');
+        // Tentative de correspondance partielle
+        if (normalizedValue.contains('maitrisable') || normalizedValue.contains('maîtrisable')) {
+          return AlertType.incendieMaitrisable;
+        }
+        if (normalizedValue.contains('hors de controle') || normalizedValue.contains('hors de contrôle')) {
+          return AlertType.incendieHorsControle;
+        }
+        if (normalizedValue.contains('fausse')) {
+          return AlertType.fausseAlerte;
+        }
         return AlertType.alerte;
     }
   }
