@@ -80,7 +80,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
             _buildInfoRow('Date du clôture de rapport', report.formattedDateTime),
             _buildInfoRow('Date de génération du rapport', report.formattedToDoListDateTime),
             _buildInfoRow('Site', report.siteDisplay),
-            _buildInfoRow('Responsable', report.responsableFullName),
+            _buildInfoRow('Signataire', report.responsableFullName),
           ],
         ),
       ),
