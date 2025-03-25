@@ -8,6 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
     steps:
       - uses: actions/checkout@v3
@@ -26,7 +30,7 @@ jobs:
         run: flutter pub get
         
       - name: Build
-        run: flutter build web --base-href /staff_admin/ --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=IS_PRODUCTION=true
+        run: flutter build web --base-href /staff_admin/ --dart-define=SUPABASE_URL=$SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY --dart-define=IS_PRODUCTION=true
         
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

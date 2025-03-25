@@ -20,8 +20,12 @@ class SupabaseConfig {
   static final supabase = Supabase.instance.client;
 
   static Future<void> initialize() async {
-    if (!kIsWeb || !const bool.fromEnvironment('IS_PRODUCTION', defaultValue: false)) {
-      await dotenv.load();
+    try {
+      if (!kIsWeb || !const bool.fromEnvironment('IS_PRODUCTION', defaultValue: false)) {
+        await dotenv.load();
+      }
+    } catch (e) {
+      debugPrint('Warning: .env file not found. Using environment variables.');
     }
 
     assert(supabaseUrl.isNotEmpty, 'SUPABASE_URL is not configured');
