@@ -204,8 +204,7 @@ class _FireAlertListScreenState extends State<FireAlertListScreen> {
                 const SizedBox(height: 4),
                 Text('Date: ${report.formattedDate}'),
                 Text('Type: ${report.alertTypeDisplay}'),
-                if (report.declencheur != null)
-                  Text('Déclencheur: ${report.declencheurDisplay}'),
+                Text('Déclencheur: ${report.declencheurDisplay}'),
               ],
             ),
             trailing: IconButton(

@@ -140,38 +140,40 @@ class _SiteTasksScreenState extends State<SiteTasksScreen> {
 
   Widget _buildDesktopTable(List<TaskSite> tasks) {
     return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Tâche')),
-          DataColumn(label: Text('Description')),
-          DataColumn(label: Text('Récurrence')),
-          DataColumn(label: Text('Actions')),
-        ],
-        rows: tasks.map((task) {
-          return DataRow(
-            cells: [
-              DataCell(Text(task.displayTaskName)),
-              DataCell(Text(task.displayTaskDescription)),
-              DataCell(Text(task.recurrenceDisplay)),
-              DataCell(
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () => _showEditDialog(context, task),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () => _showDeleteDialog(context, task),
-                    ),
-                  ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text('Tâche')),
+            DataColumn(label: Text('Description')),
+            DataColumn(label: Text('Récurrence')),
+            DataColumn(label: Text('Actions')),
+          ],
+          rows: tasks.map((task) {
+            return DataRow(
+              cells: [
+                DataCell(Text(task.displayTaskName)),
+                DataCell(Text(task.displayTaskDescription)),
+                DataCell(Text(task.recurrenceDisplay)),
+                DataCell(
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => _showEditDialog(context, task),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () => _showDeleteDialog(context, task),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          );
-        }).toList(),
+              ],
+            );
+          }).toList(),
+        ),
       ),
     );
   }
