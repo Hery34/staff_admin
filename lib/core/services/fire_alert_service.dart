@@ -6,7 +6,7 @@ import 'package:staff_admin/core/models/fire_alert_task.dart';
 class FireAlertService extends ChangeNotifier {
   final _supabase = SupabaseConfig.supabase;
   List<FireAlertReport> _reports = [];
-  Map<int, List<FireAlertTask>> _tasksByReport = {};
+  final Map<int, List<FireAlertTask>> _tasksByReport = {};
   bool _isLoading = false;
 
   List<FireAlertReport> get reports => _reports;
@@ -38,7 +38,7 @@ class FireAlertService extends ChangeNotifier {
 
       debugPrint('Raw Supabase response: $response');
 
-      if (response == null || response.isEmpty) {
+      if (response.isEmpty) {
         _reports = [];
         return;
       }
@@ -101,7 +101,7 @@ class FireAlertService extends ChangeNotifier {
 
       debugPrint('Raw tasks response for report $reportId: $response');
 
-      if (response == null || response.isEmpty) {
+      if (response.isEmpty) {
         _tasksByReport[reportId] = [];
         return;
       }

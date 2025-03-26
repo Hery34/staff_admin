@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:staff_admin/core/models/report.dart';
 import 'package:staff_admin/core/services/report_service.dart';
 import 'package:staff_admin/features/admin/screens/report_detail_screen.dart';
-import 'package:data_table_2/data_table_2.dart';
 
 class ReportListScreen extends StatefulWidget {
   const ReportListScreen({super.key});
@@ -17,7 +16,9 @@ class _ReportListScreenState extends State<ReportListScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      context.read<ReportService>().loadReports();
+      if(mounted) {
+        context.read<ReportService>().loadReports();
+      }
     });
   }
 

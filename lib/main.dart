@@ -5,6 +5,7 @@ import 'package:staff_admin/core/services/auth_service.dart';
 import 'package:staff_admin/core/services/deep_link_service.dart';
 import 'package:staff_admin/core/services/fire_alert_service.dart';
 import 'package:staff_admin/core/services/report_service.dart';
+import 'package:staff_admin/core/services/task_site_service.dart';
 import 'package:staff_admin/features/admin/screens/login_screen.dart';
 
 void main() async {
@@ -16,6 +17,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => FireAlertService()),
         ChangeNotifierProvider(create: (_) => ReportService()),
+        ChangeNotifierProvider(create: (_) => TaskSiteService()),
       ],
       child: const MyApp(),
     ),
@@ -37,6 +39,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => FireAlertService()),
         ChangeNotifierProvider(create: (_) => ReportService()),
+        ChangeNotifierProvider(create: (_) => TaskSiteService()),
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,

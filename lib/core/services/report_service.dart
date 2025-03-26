@@ -6,7 +6,7 @@ import 'package:staff_admin/core/models/report_detail.dart';
 class ReportService extends ChangeNotifier {
   final _supabase = SupabaseConfig.supabase;
   List<Report> _reports = [];
-  Map<int, List<ReportDetail>> _detailsByReport = {};
+  final Map<int, List<ReportDetail>> _detailsByReport = {};
   bool _isLoading = false;
 
   List<Report> get reports => _reports;
@@ -38,7 +38,7 @@ class ReportService extends ChangeNotifier {
 
       debugPrint('Raw Supabase response: $response');
 
-      if (response == null || response.isEmpty) {
+      if (response.isEmpty) {
         _reports = [];
         return;
       }
@@ -94,7 +94,7 @@ class ReportService extends ChangeNotifier {
 
       debugPrint('Raw details response for report $reportId: $response');
 
-      if (response == null || response.isEmpty) {
+      if (response.isEmpty) {
         _detailsByReport[reportId] = [];
         return;
       }

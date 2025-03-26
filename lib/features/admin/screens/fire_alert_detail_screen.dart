@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
-import 'package:staff_admin/core/constants/colors.dart';
 import 'package:staff_admin/core/models/fire_alert_report.dart';
 import 'package:staff_admin/core/models/fire_alert_task.dart';
 import 'package:staff_admin/core/services/fire_alert_service.dart';
@@ -24,7 +23,9 @@ class _FireAlertDetailScreenState extends State<FireAlertDetailScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      context.read<FireAlertService>().loadTasksForReport(widget.reportId);
+      if(mounted) {
+        context.read<FireAlertService>().loadTasksForReport(widget.reportId);
+      }
     });
   }
 

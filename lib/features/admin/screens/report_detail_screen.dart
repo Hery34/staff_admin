@@ -23,7 +23,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      context.read<ReportService>().loadDetailsForReport(widget.reportId);
+      if(mounted) {
+        context.read<ReportService>().loadDetailsForReport(widget.reportId);
+      }
     });
   }
 

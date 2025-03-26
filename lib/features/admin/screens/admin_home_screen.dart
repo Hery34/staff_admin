@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:staff_admin/core/services/auth_service.dart';
 import 'package:staff_admin/features/admin/screens/fire_alert_list_screen.dart';
 import 'package:staff_admin/features/admin/screens/report_list_screen.dart';
+import 'package:staff_admin/features/admin/screens/site_tasks_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -19,9 +20,19 @@ class AdminHomeScreen extends StatelessWidget {
               try {
                 final result = await context.read<AuthService>().logout();
                 if (!context.mounted) return;
-                
+
                 if (result == "Déconnexion réussie") {
-                  Navigator.of(context).pushReplacementNamed('/login');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Déconnexion réussie"),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/login',
+                    (route) => false,
+                  );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -33,8 +44,8 @@ class AdminHomeScreen extends StatelessWidget {
               } catch (e) {
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Une erreur est survenue lors de la déconnexion"),
+                  SnackBar(
+                    content: Text("Erreur lors de la déconnexion: $e"),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -71,6 +82,19 @@ class AdminHomeScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const ReportListScreen(),
+                ),
+              );
+            },
+          ),
+          _buildMenuCard(
+            context,
+            'Tâches par Site',
+            Icons.task_alt,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SiteTasksScreen(),
                 ),
               );
             },

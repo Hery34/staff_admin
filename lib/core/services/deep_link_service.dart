@@ -27,10 +27,8 @@ class DeepLinkService {
         // Listen to incoming deep links
         _appLinks.uriLinkStream.listen(
           (uri) {
-            if (uri != null) {
-              handleDeepLink(uri);
-            }
-          },
+            handleDeepLink(uri);
+                    },
           onError: (err) {
             debugPrint('Deep link error: $err');
           },

@@ -65,31 +65,18 @@ class AuthService extends ChangeNotifier {
 
   Future<String> logout() async {
     try {
-      _isLoading = true;
-      notifyListeners();
-
-      // Vérifier si l'utilisateur est connecté
-      final session = await _supabase.auth.currentSession;
-      if (session == null) {
-        return "Vous n'êtes pas connecté";
-      }
-
-      // Déconnexion de Supabase
       await _supabase.auth.signOut();
       
-      // Réinitialisation de l'état
-      _currentUser = null;
+      // Vérifier si l'utilisateur est bien déconnecté
+      final session = await _supabase.auth.currentSession;
+      if (session != null) {
+        return "Erreur lors de la déconnexion";
+      }
       
       return "Déconnexion réussie";
-    } on AuthException catch (e) {
-      debugPrint('Erreur AuthException lors de la déconnexion: ${e.message}');
-      return e.message;
     } catch (e) {
-      debugPrint('Erreur lors de la déconnexion: $e');
-      return "Une erreur est survenue lors de la déconnexion";
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      debugPrint('Error during logout: $e');
+      return "Erreur lors de la déconnexion: $e";
     }
   }
 

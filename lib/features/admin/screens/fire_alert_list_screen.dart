@@ -22,7 +22,9 @@ class _FireAlertListScreenState extends State<FireAlertListScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      context.read<FireAlertService>().loadReports();
+      if(mounted) {
+        context.read<FireAlertService>().loadReports();
+      }
     });
   }
 
