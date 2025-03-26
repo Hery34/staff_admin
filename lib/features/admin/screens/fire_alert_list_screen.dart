@@ -177,7 +177,7 @@ class _FireAlertListScreenState extends State<FireAlertListScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        report.isRunning ? 'En cours' : 'Terminé',
+                        report.isRunning ? 'En Cours' : 'Terminé',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -189,7 +189,7 @@ class _FireAlertListScreenState extends State<FireAlertListScreen> {
                 if (report.siteName != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                    report.siteName!,
+                    FireAlertReport.capitalize(report.siteName!),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -204,6 +204,8 @@ class _FireAlertListScreenState extends State<FireAlertListScreen> {
                 const SizedBox(height: 4),
                 Text('Date: ${report.formattedDate}'),
                 Text('Type: ${report.alertTypeDisplay}'),
+                if (report.declencheur != null)
+                  Text('Déclencheur: ${report.declencheurDisplay}'),
               ],
             ),
             trailing: IconButton(
@@ -249,15 +251,21 @@ class _FireAlertListScreenState extends State<FireAlertListScreen> {
           size: ColumnSize.M,
         ),
         DataColumn2(
-          label: Text('Actions'),
+          label: Text('Déclencheur'),
           size: ColumnSize.M,
+        ),
+        DataColumn2(
+          label: Text('Voir rapport'),
+          size: ColumnSize.S,
         ),
       ],
       rows: reports.map((report) {
         return DataRow(
           cells: [
             DataCell(Text('#${report.id}')),
-            DataCell(Text(report.siteName ?? '-')),
+            DataCell(Text(report.siteName != null 
+              ? FireAlertReport.capitalize(report.siteName!)
+              : '-')),
             DataCell(Text(report.formattedDate)),
             DataCell(Text(report.alertTypeDisplay)),
             DataCell(
@@ -271,11 +279,15 @@ class _FireAlertListScreenState extends State<FireAlertListScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  report.isRunning ? 'En cours' : 'Terminé',
-                  style: const TextStyle(color: Colors.white),
+                  report.isRunning ? 'En Cours' : 'Terminé',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ),
+            DataCell(Text(report.declencheurDisplay)),
             DataCell(
               IconButton(
                 icon: const Icon(Icons.visibility),

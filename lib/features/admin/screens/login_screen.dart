@@ -75,6 +75,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       obscureText: _obscureText,
+                      onFieldSubmitted: (value) {
+                        final authService = Provider.of<AuthService>(context, listen: false);
+                        _submitForm(authService);
+                      },
                       validator: (input) {
                         if (input!.length < 6) {
                           return 'Le mot de passe doit contenir au moins 6 caractères';

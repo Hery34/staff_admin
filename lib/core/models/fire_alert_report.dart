@@ -128,11 +128,11 @@ class FireAlertReport {
   String get alertTypeDisplay {
     switch (alertType) {
       case AlertType.fausseAlerte:
-        return 'Fausse alerte';
+        return 'Fausse Alerte';
       case AlertType.incendieMaitrisable:
-        return 'Incendie maîtrisable';
+        return 'Incendie Maîtrisable';
       case AlertType.incendieHorsControle:
-        return 'Incendie hors de contrôle';
+        return 'Incendie Hors de Contrôle';
       case AlertType.alerte:
         return 'Alerte';
     }
@@ -147,5 +147,23 @@ class FireAlertReport {
       default:
         return Declencheur.automatique;
     }
+  }
+
+  String get declencheurDisplay {
+    switch (declencheur) {
+      case Declencheur.manuel:
+        return 'Manuel';
+      case Declencheur.automatique:
+        return 'Automatique';
+    }
+  }
+
+  // Fonction utilitaire pour capitaliser la première lettre
+  static String capitalize(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1);
+    }).join(' ');
   }
 } 

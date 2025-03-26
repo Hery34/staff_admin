@@ -17,6 +17,8 @@ class _SiteTasksScreenState extends State<SiteTasksScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestion des tâches par site'),
@@ -32,7 +34,24 @@ class _SiteTasksScreenState extends State<SiteTasksScreen> {
                 ? const Center(
                     child: Text('Veuillez sélectionner un site'),
                   )
-                : _buildTasksList(),
+                : Consumer<TaskSiteService>(
+                    builder: (context, service, child) {
+                      if (service.isLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      final tasks = service.tasks;
+                      if (tasks.isEmpty) {
+                        return const Center(
+                          child: Text('Aucune tâche trouvée pour ce site'),
+                        );
+                      }
+
+                      return isMobile
+                          ? _buildMobileList(tasks)
+                          : _buildDesktopTable(tasks);
+                    },
+                  ),
           ),
         ],
       ),
@@ -84,36 +103,59 @@ class _SiteTasksScreenState extends State<SiteTasksScreen> {
     );
   }
 
-  Widget _buildTasksList() {
-    return Consumer<TaskSiteService>(
-      builder: (context, service, child) {
-        if (service.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final tasks = service.tasks;
-        if (tasks.isEmpty) {
-          return const Center(
-            child: Text('Aucune tâche trouvée pour ce site'),
-          );
-        }
-
-        return ListView.builder(
-          itemCount: tasks.length,
-          itemBuilder: (context, index) {
-            final task = tasks[index];
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: ListTile(
-                title: Text(task.taskName),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(task.taskDescription),
-                    Text('Récurrence: ${task.recurrenceDisplay}'),
-                  ],
+  Widget _buildMobileList(List<TaskSite> tasks) {
+    return ListView.builder(
+      itemCount: tasks.length,
+      itemBuilder: (context, index) {
+        final task = tasks[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: ListTile(
+            title: Text(task.displayTaskName),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(task.displayTaskDescription),
+                Text('Récurrence: ${task.recurrenceDisplay}'),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => _showEditDialog(context, task),
                 ),
-                trailing: Row(
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () => _showDeleteDialog(context, task),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopTable(List<TaskSite> tasks) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('Tâche')),
+          DataColumn(label: Text('Description')),
+          DataColumn(label: Text('Récurrence')),
+          DataColumn(label: Text('Actions')),
+        ],
+        rows: tasks.map((task) {
+          return DataRow(
+            cells: [
+              DataCell(Text(task.displayTaskName)),
+              DataCell(Text(task.displayTaskDescription)),
+              DataCell(Text(task.recurrenceDisplay)),
+              DataCell(
+                Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
@@ -127,10 +169,10 @@ class _SiteTasksScreenState extends State<SiteTasksScreen> {
                   ],
                 ),
               ),
-            );
-          },
-        );
-      },
+            ],
+          );
+        }).toList(),
+      ),
     );
   }
 

@@ -10,6 +10,7 @@ enum Recurrence {
   saturday,
   sunday,
   weekly,
+  // ignore: constant_identifier_names
   twice_a_week,
 }
 
@@ -91,4 +92,8 @@ class TaskSite {
         return 'Deux fois par semaine';
     }
   }
+
+  // Getters pour les noms formatés
+  String get displayTaskName => taskName;
+  String get displayTaskDescription => taskDescription;
 } 

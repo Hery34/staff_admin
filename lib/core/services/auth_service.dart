@@ -29,8 +29,8 @@ class AuthService extends ChangeNotifier {
       );
       _currentUser = response.user;
       return "Vous êtes connecté !";
-    } on AuthException catch (e) {
-      return e.message;
+    } on AuthException {
+      return "Veuillez vérifier vos identifiants";
     } catch (e) {
       return "Une erreur est survenue lors de la connexion";
     } finally {
@@ -67,11 +67,9 @@ class AuthService extends ChangeNotifier {
     try {
       await _supabase.auth.signOut();
       
-      // Vérifier si l'utilisateur est bien déconnecté
-      final session = await _supabase.auth.currentSession;
-      if (session != null) {
-        return "Erreur lors de la déconnexion";
-      }
+      // Réinitialiser l'état du service
+      _currentUser = null;
+      notifyListeners();
       
       return "Déconnexion réussie";
     } catch (e) {

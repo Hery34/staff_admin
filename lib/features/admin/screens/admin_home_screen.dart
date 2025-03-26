@@ -12,7 +12,7 @@ class AdminHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Administration Annexx'),
+        title: const Text('Administration Staff Annexx'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -22,22 +22,18 @@ class AdminHomeScreen extends StatelessWidget {
                 if (!context.mounted) return;
 
                 if (result == "Déconnexion réussie") {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Déconnexion réussie"),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  if (!context.mounted) return;
                   
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    '/login',
-                    (route) => false,
-                  );
+                  await Navigator.of(context).pushReplacementNamed('/login');
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(result),
                       backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   );
                 }
@@ -47,6 +43,10 @@ class AdminHomeScreen extends StatelessWidget {
                   SnackBar(
                     content: Text("Erreur lors de la déconnexion: $e"),
                     backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 );
               }
@@ -54,81 +54,178 @@ class AdminHomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: GridView.count(
-        crossAxisCount: 2,
-        padding: const EdgeInsets.all(16.0),
-        mainAxisSpacing: 16.0,
-        crossAxisSpacing: 16.0,
-        children: [
-          _buildMenuCard(
-            context,
-            'Rapports Alerte Incendie',
-            Icons.local_fire_department,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const FireAlertListScreen(),
-                ),
-              );
-            },
-          ),
-          _buildMenuCard(
-            context,
-            'Rapports de Tâches',
-            Icons.assignment,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ReportListScreen(),
-                ),
-              );
-            },
-          ),
-          _buildMenuCard(
-            context,
-            'Tâches par Site',
-            Icons.task_alt,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SiteTasksScreen(),
-                ),
-              );
-            },
-          ),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Responsive layout
+          final isWebOrDesktop = constraints.maxWidth > 600;
+          final crossAxisCount = isWebOrDesktop ? 3 : 1;
+          final padding = isWebOrDesktop ? 24.0 : 16.0;
+          
+          return Center(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: isWebOrDesktop ? 1200 : double.infinity,
+              ),
+              child: GridView.count(
+                crossAxisCount: crossAxisCount,
+                padding: EdgeInsets.all(padding),
+                mainAxisSpacing: padding,
+                crossAxisSpacing: padding,
+                // Ajuster la taille des cartes sur le web
+                childAspectRatio: isWebOrDesktop ? 1.5 : 1.3,
+                shrinkWrap: isWebOrDesktop,
+                physics: isWebOrDesktop 
+                  ? const NeverScrollableScrollPhysics() 
+                  : const AlwaysScrollableScrollPhysics(),
+                children: [
+                  _buildAnimatedMenuCard(
+                    context,
+                    'Rapports Alerte Incendie',
+                    Icons.local_fire_department,
+                    () => _navigateWithAnimation(
+                      context,
+                      const FireAlertListScreen(),
+                    ),
+                    0,
+                  ),
+                  _buildAnimatedMenuCard(
+                    context,
+                    'Rapports quotidiens',
+                    Icons.assignment,
+                    () => _navigateWithAnimation(
+                      context,
+                      const ReportListScreen(),
+                    ),
+                    1,
+                  ),
+                  _buildAnimatedMenuCard(
+                    context,
+                    'Tâches par Site',
+                    Icons.task_alt,
+                    () => _navigateWithAnimation(
+                      context,
+                      const SiteTasksScreen(),
+                    ),
+                    2,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildMenuCard(
+  Future<void> _navigateWithAnimation(BuildContext context, Widget screen) async {
+    await Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => screen,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOutCubic;
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+          var offsetAnimation = animation.drive(tween);
+          return SlideTransition(
+            position: offsetAnimation,
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 500),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedMenuCard(
     BuildContext context,
     String title,
     IconData icon,
     VoidCallback onTap,
+    int index,
   ) {
-    return Card(
-      elevation: 4,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: Theme.of(context).colorScheme.primary,
+    final isWebOrDesktop = MediaQuery.of(context).size.width > 600;
+
+    return TweenAnimationBuilder(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: Duration(milliseconds: 400 + (index * 100)),
+      curve: Curves.easeOutCubic,
+      builder: (context, double value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: Hero(
+        tag: title,
+        child: Card(
+          elevation: 4,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                    Theme.of(context).colorScheme.primary,
+                  ],
+                ),
+              ),
+              child: isWebOrDesktop
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        icon,
+                        size: 32,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 16),
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        icon,
+                        size: 48,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          title,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
+          ),
         ),
       ),
     );
