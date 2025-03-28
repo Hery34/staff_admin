@@ -45,6 +45,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   app_links: ^3.5.0
   collection: ^1.18.0
+  photo_view: ^0.14.0
 
 dev_dependencies:
   flutter_test:

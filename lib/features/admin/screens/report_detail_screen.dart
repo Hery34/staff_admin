@@ -5,6 +5,7 @@ import 'package:staff_admin/core/models/report.dart';
 import 'package:staff_admin/core/models/report_detail.dart';
 import 'package:staff_admin/core/services/report_service.dart';
 import 'package:data_table_2/data_table_2.dart';
+import 'package:staff_admin/features/admin/screens/image_viewer_screen.dart';
 
 class ReportDetailScreen extends StatefulWidget {
   final int reportId;
@@ -180,7 +181,32 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                             ? IconButton(
                                 icon: const Icon(Icons.photo),
                                 onPressed: () {
-                                  // TODO: Implement photo view
+                                  try {
+                                    final uri = Uri.parse(detail.photoUrl!);
+                                    if (uri.hasAbsolutePath) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ImageViewerScreen(
+                                            imageUrl: detail.photoUrl!,
+                                            title: 'Photo du rapport',
+                                          ),
+                                        ),
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text("L'URL de l'image n'est pas valide"),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("Erreur lors de l'accès à l'image"),
+                                      ),
+                                    );
+                                  }
                                 },
                               )
                             : const Text('-'),
