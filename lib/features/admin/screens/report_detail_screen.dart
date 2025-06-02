@@ -34,7 +34,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Rapport #${widget.reportId}'),
+        title: Text('Rapport n° ${widget.reportId}'),
       ),
       body: Consumer<ReportService>(
         builder: (context, service, child) {

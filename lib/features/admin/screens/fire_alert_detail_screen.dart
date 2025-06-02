@@ -52,7 +52,7 @@ class _FireAlertDetailScreenState extends State<FireAlertDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Rapport #${widget.reportId}'),
+                Text('Rapport n° ${widget.reportId}'),
                 if (report.siteName != null)
                   Text(
                     report.siteName!,
