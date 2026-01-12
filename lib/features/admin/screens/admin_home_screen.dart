@@ -4,6 +4,7 @@ import 'package:staff_admin/core/services/auth_service.dart';
 import 'package:staff_admin/features/admin/screens/fire_alert_list_screen.dart';
 import 'package:staff_admin/features/admin/screens/report_list_screen.dart';
 import 'package:staff_admin/features/admin/screens/site_tasks_screen.dart';
+import 'package:staff_admin/features/admin/screens/create_agent_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -107,6 +108,16 @@ class AdminHomeScreen extends StatelessWidget {
                       const SiteTasksScreen(),
                     ),
                     2,
+                  ),
+                  _buildAnimatedMenuCard(
+                    context,
+                    'Créer un agent',
+                    Icons.person_add,
+                    () => _navigateWithAnimation(
+                      context,
+                      const CreateAgentScreen(),
+                    ),
+                    3,
                   ),
                 ],
               ),

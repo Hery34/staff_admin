@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:staff_admin/core/constants/colors.dart';
+import 'package:staff_admin/core/models/agent.dart';
 import 'package:staff_admin/core/services/auth_service.dart';
+import 'package:staff_admin/core/services/agent_service.dart';
 import 'package:staff_admin/features/admin/screens/admin_home_screen.dart';
 
 
@@ -136,6 +138,66 @@ class _LoginScreenState extends State<LoginScreen> {
       String result = await authService.login(credential);
       if (!mounted) return;
       if (result == "Vous êtes connecté !") {
+        // Vérifier le rôle de l'agent
+        final agentService = Provider.of<AgentService>(context, listen: false);
+        final agent = await agentService.getCurrentAgent();
+        
+        if (!mounted) return;
+        
+        // Vérifier si l'agent existe dans la base de données
+        if (agent == null) {
+          await authService.logout();
+          _showErrorDialog(
+            context,
+            'Agent non trouvé dans la base de données. Veuillez contacter l\'administrateur.',
+          );
+          return;
+        }
+        
+        // Vérifier si l'agent a le droit d'accéder à l'app admin
+        // Seuls les responsables et directeurs régionaux peuvent accéder
+        final allowedRoles = [AgentRole.responsable, AgentRole.directeur_regionnal];
+        if (!allowedRoles.contains(agent.role)) {
+          await authService.logout();
+          _showErrorDialog(
+            context,
+            'Cette application est réservée à la supervision et à l\'administration.\n\n'
+            'Votre rôle (${agent.role.displayName}) ne vous permet pas d\'accéder à cette application.\n\n'
+            'Veuillez utiliser l\'application mobile Staff_V2 pour vous connecter avec vos identifiants.',
+          );
+          return;
+        }
+        
+        // Vérifier le statut du compte (uniquement pour les rôles autorisés)
+        if (agent.statutCompte == AgentStatus.suspendu) {
+          await authService.logout();
+          _showErrorDialog(
+            context,
+            'Votre compte a été suspendu. Veuillez contacter l\'administrateur.',
+          );
+          return;
+        }
+        
+        if (agent.statutCompte == AgentStatus.en_attente_confirmation) {
+          await authService.logout();
+          _showErrorDialog(
+            context,
+            'Votre compte est en attente de confirmation. Veuillez vérifier votre email et confirmer votre compte.',
+          );
+          return;
+        }
+        
+        // Vérifier que le compte est actif
+        if (agent.statutCompte != AgentStatus.actif) {
+          await authService.logout();
+          _showErrorDialog(
+            context,
+            'Votre compte n\'est pas actif. Veuillez contacter l\'administrateur.',
+          );
+          return;
+        }
+        
+        // Rediriger vers l'écran d'accueil admin
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

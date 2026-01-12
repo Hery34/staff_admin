@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:staff_admin/core/config/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 class Credential {
   final String email;
@@ -43,14 +42,9 @@ class AuthService extends ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
-
-      final redirectUrl = kIsWeb 
-          ? 'http://localhost:3000/reset-password'  // URL de développement web
-          : 'io.supabase.annexx://reset-callback/';
           
       await _supabase.auth.resetPasswordForEmail(
         email,
-        redirectTo: redirectUrl,
       );
       return "Un email de réinitialisation vous a été envoyé";
     } on AuthException catch (e) {
@@ -78,26 +72,4 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> updatePassword(
-    String newPassword,
-    String accessToken,
-    String refreshToken,
-  ) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      final session = await _supabase.auth.recoverSession(refreshToken);
-      await _supabase.auth.updateUser(
-        UserAttributes(
-          password: newPassword,
-        ),
-      );
-    } catch (e) {
-      throw "Erreur lors de la mise à jour du mot de passe: ${e.toString()}";
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 } 

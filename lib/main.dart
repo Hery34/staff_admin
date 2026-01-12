@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:staff_admin/core/config/supabase_config.dart';
 import 'package:staff_admin/core/services/auth_service.dart';
-import 'package:staff_admin/core/services/deep_link_service.dart';
+import 'package:staff_admin/core/services/agent_service.dart';
 import 'package:staff_admin/core/services/fire_alert_service.dart';
 import 'package:staff_admin/core/services/report_service.dart';
 import 'package:staff_admin/core/services/task_site_service.dart';
@@ -16,6 +16,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => AgentService()),
         ChangeNotifierProvider(create: (_) => FireAlertService()),
         ChangeNotifierProvider(create: (_) => ReportService()),
         ChangeNotifierProvider(create: (_) => TaskSiteService()),
@@ -26,24 +27,19 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  static final navigatorKey = GlobalKey<NavigatorState>();
-  
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Initialize deep linking with navigator key
-    DeepLinkService.initialize(navigatorKey: navigatorKey);
-
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => AgentService()),
         ChangeNotifierProvider(create: (_) => FireAlertService()),
         ChangeNotifierProvider(create: (_) => ReportService()),
         ChangeNotifierProvider(create: (_) => TaskSiteService()),
       ],
       child: MaterialApp(
-        navigatorKey: navigatorKey,
         title: 'Staff Admin Annexx',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -52,7 +48,7 @@ class MyApp extends StatelessWidget {
             brightness: Brightness.light,
           ),
           useMaterial3: true,
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             elevation: 2,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
