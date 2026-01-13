@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
 class Report {
@@ -36,7 +37,26 @@ class Report {
   String get formattedToDoListDateTime {
     final todoDateTime = toDoList['date_time'];
     if (todoDateTime == null) return 'Non spécifié';
-    return DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(todoDateTime));
+    
+    DateTime dateTime;
+    if (todoDateTime is DateTime) {
+      dateTime = todoDateTime;
+    } else if (todoDateTime is String) {
+      try {
+        dateTime = DateTime.parse(todoDateTime);
+      } catch (e) {
+        debugPrint('Error parsing date_time: $todoDateTime - $e');
+        return 'Date invalide';
+      }
+    } else {
+      debugPrint('Format de date non supporté: ${todoDateTime.runtimeType}');
+      return 'Format de date non supporté';
+    }
+    
+    // Log pour debug
+    debugPrint('formattedToDoListDateTime - Date parsée: $dateTime');
+    
+    return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
   }
   
   String get siteDisplay {

@@ -3,9 +3,14 @@ import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 import 'package:staff_admin/core/models/report.dart';
 import 'package:staff_admin/core/models/report_detail.dart';
+import 'package:staff_admin/core/models/move_in.dart';
+import 'package:staff_admin/core/models/move_out.dart';
+import 'package:staff_admin/core/models/ovl.dart';
 import 'package:staff_admin/core/services/report_service.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:staff_admin/features/admin/screens/image_viewer_screen.dart';
+import 'package:staff_admin/features/admin/screens/move_in_detail_screen.dart';
+import 'package:staff_admin/features/admin/screens/move_out_detail_screen.dart';
 
 class ReportDetailScreen extends StatefulWidget {
   final int reportId;
@@ -30,6 +35,29 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     });
   }
 
+  /// Calcule la hauteur dynamique d'un DataTable2 en fonction du nombre de lignes
+  /// 
+  /// [rowCount] : Nombre de lignes de données dans le tableau
+  /// [headerHeight] : Hauteur de l'en-tête du tableau (défaut: 56px)
+  /// [rowHeight] : Hauteur d'une ligne de données (défaut: 56px)
+  /// [minHeight] : Hauteur minimale du tableau (défaut: 200px)
+  /// [maxHeight] : Hauteur maximale du tableau (défaut: 600px)
+  /// 
+  /// Retourne la hauteur calculée contrainte entre minHeight et maxHeight
+  double _calculateTableHeight(
+    int rowCount, {
+    double headerHeight = 56.0,
+    double rowHeight = 56.0,
+    double minHeight = 200.0,
+    double maxHeight = 600.0,
+  }) {
+    // Calcul de base : en-tête + lignes
+    final calculatedHeight = headerHeight + (rowCount * rowHeight);
+    
+    // Application des contraintes min/max
+    return calculatedHeight.clamp(minHeight, maxHeight);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,16 +77,24 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
             );
           }
 
-          return Padding(
+          final moveIns = service.getMoveInsForReport(widget.reportId) ?? [];
+          final moveOuts = service.getMoveOutsForReport(widget.reportId) ?? [];
+          final ovls = service.getOvlsForReport(widget.reportId) ?? [];
+
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildReportInfo(report),
                 const SizedBox(height: 24),
-                Expanded(
-                  child: _buildDetailsTable(details),
-                ),
+                _buildDetailsTable(details),
+                const SizedBox(height: 24),
+                _buildMoveInsSection(moveIns),
+                const SizedBox(height: 24),
+                _buildMoveOutsSection(moveOuts),
+                const SizedBox(height: 24),
+                _buildOvlsSection(ovls),
               ],
             ),
           );
@@ -112,28 +148,6 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   }
 
   Widget _buildDetailsTable(List<ReportDetail> details) {
-    if (details.isEmpty) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Détails',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              const Center(
-                child: Text('Aucun détail associé à ce rapport'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -141,84 +155,333 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Détails',
+              'Tâches du jour',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: DataTable2(
-                columnSpacing: 12,
-                horizontalMargin: 12,
-                minWidth: 600,
-                smRatio: 0.75,
-                lmRatio: 1.5,
-                columns: const [
-                  DataColumn2(
-                    label: Text('Tâche'),
-                    size: ColumnSize.L,
-                  ),
-                  DataColumn2(
-                    label: Text('Commentaire'),
-                    size: ColumnSize.L,
-                  ),
-                  DataColumn2(
-                    label: Text('Photo'),
-                    size: ColumnSize.S,
-                  ),
-                ],
-                rows: details.map((detail) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(detail.taskName ?? 'Tâche ${detail.task}')),
-                      DataCell(
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 300),
-                          child: Text(detail.comment ?? '-'),
-                        ),
+            if (details.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('Aucune tâche associée à ce rapport'),
+                ),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: (MediaQuery.of(context).size.width - 32).clamp(600.0, double.infinity),
+                  height: _calculateTableHeight(details.length),
+                  child: DataTable2(
+                    columnSpacing: 12,
+                    horizontalMargin: 12,
+                    minWidth: 600,
+                    smRatio: 0.75,
+                    lmRatio: 1.5,
+                    columns: const [
+                      DataColumn2(
+                        label: Text('Tâche'),
+                        size: ColumnSize.L,
                       ),
-                      DataCell(
-                        detail.photoUrl != null
-                            ? IconButton(
-                                icon: const Icon(Icons.photo),
-                                onPressed: () {
-                                  try {
-                                    final uri = Uri.parse(detail.photoUrl!);
-                                    if (uri.hasAbsolutePath) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ImageViewerScreen(
-                                            imageUrl: detail.photoUrl!,
-                                            title: 'Photo du rapport',
-                                          ),
-                                        ),
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text("L'URL de l'image n'est pas valide"),
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Erreur lors de l'accès à l'image"),
-                                      ),
-                                    );
-                                  }
-                                },
-                              )
-                            : const Text('-'),
+                      DataColumn2(
+                        label: Text('État'),
+                        size: ColumnSize.S,
+                      ),
+                      DataColumn2(
+                        label: Text('Commentaire'),
+                        size: ColumnSize.L,
+                      ),
+                      DataColumn2(
+                        label: Text('Photo'),
+                        size: ColumnSize.S,
                       ),
                     ],
-                  );
-                }).toList(),
+                    rows: details.map((detail) {
+                      return DataRow(
+                        cells: [
+                          DataCell(Text(detail.taskName ?? 'Tâche ${detail.task}')),
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Complété',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 300),
+                              child: Text(detail.comment ?? '-'),
+                            ),
+                          ),
+                          DataCell(
+                            detail.photoUrl != null
+                                ? IconButton(
+                                    icon: const Icon(Icons.photo),
+                                    onPressed: () {
+                                      try {
+                                        final uri = Uri.parse(detail.photoUrl!);
+                                        if (uri.hasAbsolutePath) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => ImageViewerScreen(
+                                                imageUrl: detail.photoUrl!,
+                                                title: 'Photo du rapport',
+                                              ),
+                                            ),
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text("L'URL de l'image n'est pas valide"),
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text("Erreur lors de l'accès à l'image"),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  )
+                                : const Text('-'),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),
     );
   }
-} 
+
+  Widget _buildMoveInsSection(List<MoveIn> moveIns) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.move_to_inbox, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'Move-In du jour (${moveIns.length})',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (moveIns.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('Aucun move-in pour ce jour'),
+                ),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: (MediaQuery.of(context).size.width - 32).clamp(600.0, double.infinity),
+                  height: _calculateTableHeight(moveIns.length),
+                  child: DataTable2(
+                    columnSpacing: 12,
+                    horizontalMargin: 12,
+                    minWidth: 600,
+                    columns: const [
+                      DataColumn2(label: Text('Nom'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Box'), size: ColumnSize.S),
+                      DataColumn2(label: Text('Date création'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Créé par'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Commentaires'), size: ColumnSize.L),
+                    ],
+                    rows: moveIns.map((moveIn) {
+                      return DataRow(
+                        onSelectChanged: (_) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MoveInDetailScreen(
+                                moveIn: moveIn,
+                              ),
+                            ),
+                          );
+                        },
+                        cells: [
+                          DataCell(Text(moveIn.name)),
+                          DataCell(Text(moveIn.box)),
+                          DataCell(Text(moveIn.formattedCreatedAt)),
+                          DataCell(Text(moveIn.createdByName)),
+                          DataCell(
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 300),
+                              child: Text(moveIn.comments ?? '-'),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoveOutsSection(List<MoveOut> moveOuts) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.exit_to_app, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'Move-Out du jour (${moveOuts.length})',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (moveOuts.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('Aucun move-out pour ce jour'),
+                ),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: (MediaQuery.of(context).size.width - 32).clamp(600.0, double.infinity),
+                  height: _calculateTableHeight(moveOuts.length),
+                  child: DataTable2(
+                    columnSpacing: 12,
+                    horizontalMargin: 12,
+                    minWidth: 600,
+                    columns: const [
+                      DataColumn2(label: Text('Nom'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Box'), size: ColumnSize.S),
+                      DataColumn2(label: Text('Date création'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Créé par'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Commentaires'), size: ColumnSize.L),
+                    ],
+                    rows: moveOuts.map((moveOut) {
+                      return DataRow(
+                        onSelectChanged: (_) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MoveOutDetailScreen(
+                                moveOut: moveOut,
+                              ),
+                            ),
+                          );
+                        },
+                        cells: [
+                          DataCell(Text(moveOut.name)),
+                          DataCell(Text(moveOut.box)),
+                          DataCell(Text(moveOut.formattedCreatedAt)),
+                          DataCell(Text(moveOut.createdByName)),
+                          DataCell(
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 300),
+                              child: Text(moveOut.comments ?? '-'),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOvlsSection(List<Ovl> ovls) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.lock, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'OVL posées du jour (${ovls.length})',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (ovls.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('Aucune OVL posée pour ce jour'),
+                ),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: (MediaQuery.of(context).size.width - 32).clamp(600.0, double.infinity),
+                  height: _calculateTableHeight(ovls.length),
+                  child: DataTable2(
+                    columnSpacing: 12,
+                    horizontalMargin: 12,
+                    minWidth: 600,
+                    columns: const [
+                      DataColumn2(label: Text('Numéro'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Code'), size: ColumnSize.S),
+                      DataColumn2(label: Text('Date/Heure'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Client ID'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Opérateur'), size: ColumnSize.M),
+                    ],
+                    rows: ovls.map((ovl) {
+                      return DataRow(
+                        cells: [
+                          DataCell(Text(ovl.number ?? '-')),
+                          DataCell(Text(ovl.code?.toString() ?? '-')),
+                          DataCell(Text(ovl.formattedDateTime)),
+                          DataCell(Text(ovl.customerId ?? '-')),
+                          DataCell(Text(ovl.operatorName)),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

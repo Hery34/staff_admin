@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:staff_admin/core/models/report.dart';
 import 'package:staff_admin/core/services/report_service.dart';
 import 'package:staff_admin/features/admin/screens/report_detail_screen.dart';
+import 'package:data_table_2/data_table_2.dart';
 
 class ReportListScreen extends StatefulWidget {
   const ReportListScreen({super.key});
@@ -16,6 +17,10 @@ class _ReportListScreenState extends State<ReportListScreen> {
   String? _selectedSite;
   String? _selectedResponsable;
   final TextEditingController _searchController = TextEditingController();
+  
+  // Pagination
+  int _currentPage = 0;
+  static const int _rowsPerPage = 25;
 
   @override
   void initState() {
@@ -34,7 +39,7 @@ class _ReportListScreenState extends State<ReportListScreen> {
   }
 
   List<Report> _filterReports(List<Report> reports) {
-    return reports.where((report) {
+    final filtered = reports.where((report) {
       final matchesDate = _selectedDate == null || 
         (report.dateTime.year == _selectedDate!.year &&
          report.dateTime.month == _selectedDate!.month &&
@@ -48,11 +53,25 @@ class _ReportListScreenState extends State<ReportListScreen> {
 
       return matchesDate && matchesSite && matchesResponsable;
     }).toList();
+    
+    // Réinitialiser la page si nécessaire après filtrage
+    final maxPage = (filtered.length / _rowsPerPage).ceil() - 1;
+    if (_currentPage > maxPage && maxPage >= 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _currentPage = 0);
+        }
+      });
+    }
+    
+    return filtered;
   }
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final isTablet = screenWidth >= 600 && screenWidth < 1024;
 
     return Scaffold(
       appBar: AppBar(
@@ -76,10 +95,10 @@ class _ReportListScreenState extends State<ReportListScreen> {
               _buildFilters(sites, responsables),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(isMobile ? 8.0 : 16.0),
                   child: isMobile
                       ? _buildMobileList(filteredReports)
-                      : _buildDesktopTable(filteredReports),
+                      : _buildDesktopTable(filteredReports, isTablet: isTablet),
                 ),
               ),
             ],
@@ -290,62 +309,314 @@ class _ReportListScreenState extends State<ReportListScreen> {
       );
     }
 
-    return ListView.builder(
-      itemCount: reports.length,
-      itemBuilder: (context, index) {
-        final report = reports[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ListTile(
-            title: Text(report.siteDisplay),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Date de clôture: ${report.formattedDateTime}'),
-                Text('Date de génération: ${report.formattedToDoListDateTime}'),
-                Text('Responsable: ${report.responsableFullName}'),
-              ],
-            ),
-            onTap: () => _navigateToDetail(report),
+    // Calculer les indices pour la pagination mobile
+    final startIndex = _currentPage * _rowsPerPage;
+    final endIndex = (startIndex + _rowsPerPage).clamp(0, reports.length);
+    final paginatedReports = reports.sublist(
+      startIndex,
+      endIndex,
+    );
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            itemCount: paginatedReports.length,
+            itemBuilder: (context, index) {
+              final report = paginatedReports[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text(
+                    report.siteDisplay,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text('Date de clôture: ${report.formattedDateTime}'),
+                      Text('Date de génération: ${report.formattedToDoListDateTime}'),
+                      Text('Responsable: ${report.responsableFullName}'),
+                    ],
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _navigateToDetail(report),
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+        // Pagination controls pour mobile
+        if (reports.length > _rowsPerPage)
+          _buildMobilePaginationControls(reports.length),
+      ],
     );
   }
 
-  Widget _buildDesktopTable(List<Report> reports) {
+  Widget _buildMobilePaginationControls(int totalItems) {
+    final totalPages = (totalItems / _rowsPerPage).ceil();
+    final startIndex = _currentPage * _rowsPerPage;
+    final endIndex = (startIndex + _rowsPerPage).clamp(0, totalItems);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).dividerColor,
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${startIndex + 1}-$endIndex sur $totalItems',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.first_page),
+                onPressed: _currentPage == 0
+                    ? null
+                    : () => setState(() => _currentPage = 0),
+                tooltip: 'Première page',
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                onPressed: _currentPage == 0
+                    ? null
+                    : () => setState(() => _currentPage--),
+                tooltip: 'Page précédente',
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '${_currentPage + 1}/$totalPages',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: _currentPage >= totalPages - 1
+                    ? null
+                    : () => setState(() => _currentPage++),
+                tooltip: 'Page suivante',
+              ),
+              IconButton(
+                icon: const Icon(Icons.last_page),
+                onPressed: _currentPage >= totalPages - 1
+                    ? null
+                    : () => setState(() => _currentPage = totalPages - 1),
+                tooltip: 'Dernière page',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopTable(List<Report> reports, {bool isTablet = false}) {
     if (reports.isEmpty) {
       return const Center(
         child: Text('Aucun rapport ne correspond aux critères sélectionnés'),
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Date clôture')),
-          DataColumn(label: Text('Date Génération')),
-          DataColumn(label: Text('Site')),
-          DataColumn(label: Text('Responsable')),
-          DataColumn(label: Text('Voir Rapport')),
-        ],
-        rows: reports.map((report) {
-          return DataRow(
-            cells: [
-              DataCell(Text(report.formattedDateTime)),
-              DataCell(Text(report.formattedToDoListDateTime)),
-              DataCell(Text(report.siteDisplay)),
-              DataCell(Text(report.responsableFullName)),
-              DataCell(
-                IconButton(
-                  icon: const Icon(Icons.visibility),
-                  onPressed: () => _navigateToDetail(report),
+    // Calculer les indices pour la pagination
+    final startIndex = _currentPage * _rowsPerPage;
+    final endIndex = (startIndex + _rowsPerPage).clamp(0, reports.length);
+    final paginatedReports = reports.sublist(
+      startIndex,
+      endIndex,
+    );
+
+    return Column(
+      children: [
+        // Tableau avec scroll vertical et horizontal
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width,
+              child: DataTable2(
+                columnSpacing: isTablet ? 8 : 12,
+                horizontalMargin: isTablet ? 8 : 12,
+                minWidth: isTablet ? 700 : 800,
+                smRatio: 0.75,
+                lmRatio: 1.5,
+                headingRowHeight: isTablet ? 48 : 56,
+                dataRowHeight: isTablet ? 48 : 56,
+                columns: [
+                  DataColumn2(
+                    label: Text(
+                      'Date clôture',
+                      style: TextStyle(fontSize: isTablet ? 12 : 14),
+                    ),
+                    size: ColumnSize.M,
+                  ),
+                  DataColumn2(
+                    label: Text(
+                      'Date Génération',
+                      style: TextStyle(fontSize: isTablet ? 12 : 14),
+                    ),
+                    size: ColumnSize.M,
+                  ),
+                  DataColumn2(
+                    label: Text(
+                      'Site',
+                      style: TextStyle(fontSize: isTablet ? 12 : 14),
+                    ),
+                    size: ColumnSize.L,
+                  ),
+                  DataColumn2(
+                    label: Text(
+                      'Responsable',
+                      style: TextStyle(fontSize: isTablet ? 12 : 14),
+                    ),
+                    size: ColumnSize.M,
+                  ),
+                  DataColumn2(
+                    label: Text(
+                      'Voir Rapport',
+                      style: TextStyle(fontSize: isTablet ? 12 : 14),
+                    ),
+                    size: ColumnSize.S,
+                  ),
+                ],
+                rows: paginatedReports.map((report) {
+                  return DataRow2(
+                    onSelectChanged: (_) => _navigateToDetail(report),
+                    cells: [
+                      DataCell(
+                        Text(
+                          report.formattedDateTime,
+                          style: TextStyle(fontSize: isTablet ? 12 : 14),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          report.formattedToDoListDateTime,
+                          style: TextStyle(fontSize: isTablet ? 12 : 14),
+                        ),
+                      ),
+                      DataCell(
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: isTablet ? 150 : 200,
+                          ),
+                          child: Text(
+                            report.siteDisplay,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: isTablet ? 12 : 14),
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: isTablet ? 120 : 150,
+                          ),
+                          child: Text(
+                            report.responsableFullName,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: isTablet ? 12 : 14),
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        IconButton(
+                          icon: Icon(
+                            Icons.visibility,
+                            size: isTablet ? 20 : 24,
+                          ),
+                          onPressed: () => _navigateToDetail(report),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+        // Pagination controls
+        if (reports.length > _rowsPerPage)
+          _buildPaginationControls(reports.length),
+      ],
+    );
+  }
+
+  Widget _buildPaginationControls(int totalItems) {
+    final totalPages = (totalItems / _rowsPerPage).ceil();
+    final startIndex = _currentPage * _rowsPerPage;
+    final endIndex = (startIndex + _rowsPerPage).clamp(0, totalItems);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).dividerColor,
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Affichage de ${startIndex + 1} à $endIndex sur $totalItems',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.first_page),
+                onPressed: _currentPage == 0
+                    ? null
+                    : () => setState(() => _currentPage = 0),
+                tooltip: 'Première page',
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                onPressed: _currentPage == 0
+                    ? null
+                    : () => setState(() => _currentPage--),
+                tooltip: 'Page précédente',
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Page ${_currentPage + 1} sur $totalPages',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: _currentPage >= totalPages - 1
+                    ? null
+                    : () => setState(() => _currentPage++),
+                tooltip: 'Page suivante',
+              ),
+              IconButton(
+                icon: const Icon(Icons.last_page),
+                onPressed: _currentPage >= totalPages - 1
+                    ? null
+                    : () => setState(() => _currentPage = totalPages - 1),
+                tooltip: 'Dernière page',
+              ),
             ],
-          );
-        }).toList(),
+          ),
+        ],
       ),
     );
   }
