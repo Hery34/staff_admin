@@ -147,7 +147,29 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     );
   }
 
+  /// Regroupe les détails par tâche (une ligne par tâche, plusieurs photos possibles).
+  List<({int task, String? taskName, String? comment, List<ReportDetail> details})> _groupDetailsByTask(
+      List<ReportDetail> details) {
+    final grouped = groupBy<ReportDetail, int>(details, (d) => d.task);
+    return grouped.entries.map((e) {
+      final list = e.value;
+      final first = list.first;
+      final comment = list.map((d) => d.comment).firstWhere(
+            (c) => c != null && c.toString().trim().isNotEmpty,
+            orElse: () => null,
+          ) ?? first.comment;
+      return (
+        task: e.key,
+        taskName: first.taskName,
+        comment: comment,
+        details: list,
+      );
+    }).toList();
+  }
+
   Widget _buildDetailsTable(List<ReportDetail> details) {
+    final taskRows = _groupDetailsByTask(details);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -171,7 +193,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 scrollDirection: Axis.horizontal,
                 child: SizedBox(
                   width: (MediaQuery.of(context).size.width - 32).clamp(600.0, double.infinity),
-                  height: _calculateTableHeight(details.length),
+                  height: _calculateTableHeight(taskRows.length),
                   child: DataTable2(
                     columnSpacing: 12,
                     horizontalMargin: 12,
@@ -196,10 +218,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                         size: ColumnSize.S,
                       ),
                     ],
-                    rows: details.map((detail) {
+                    rows: taskRows.map((row) {
                       return DataRow(
                         cells: [
-                          DataCell(Text(detail.taskName ?? 'Tâche ${detail.task}')),
+                          DataCell(Text(row.taskName ?? 'Tâche ${row.task}')),
                           DataCell(
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -219,44 +241,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                           DataCell(
                             ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 300),
-                              child: Text(detail.comment ?? '-'),
+                              child: Text(row.comment ?? '-'),
                             ),
                           ),
-                          DataCell(
-                            detail.photoUrl != null
-                                ? IconButton(
-                                    icon: const Icon(Icons.photo),
-                                    onPressed: () {
-                                      try {
-                                        final uri = Uri.parse(detail.photoUrl!);
-                                        if (uri.hasAbsolutePath) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => ImageViewerScreen(
-                                                imageUrl: detail.photoUrl!,
-                                                title: 'Photo du rapport',
-                                              ),
-                                            ),
-                                          );
-                                        } else {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text("L'URL de l'image n'est pas valide"),
-                                            ),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text("Erreur lors de l'accès à l'image"),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  )
-                                : const Text('-'),
-                          ),
+                          DataCell(_buildPhotoCell(row.details)),
                         ],
                       );
                     }).toList(),
@@ -267,6 +255,94 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
         ),
       ),
     );
+  }
+
+  static const double _thumbnailSize = 48.0;
+
+  Widget _buildPhotoCell(List<ReportDetail> detailsWithPhotos) {
+    final withUrl = detailsWithPhotos.where((d) => d.photoUrl != null && d.photoUrl!.trim().isNotEmpty).toList();
+    if (withUrl.isEmpty) return const Text('-');
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: withUrl.asMap().entries.map((e) {
+        final url = e.value.photoUrl!;
+        final index = e.key + 1;
+        return Tooltip(
+          message: 'Photo $index - cliquer pour agrandir',
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _openPhotoViewer(url, index),
+              borderRadius: BorderRadius.circular(8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: _thumbnailSize,
+                  height: _thumbnailSize,
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        child: Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+                      child: const Icon(Icons.broken_image_outlined, size: 28),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  void _openPhotoViewer(String url, int index) {
+    try {
+      final uri = Uri.parse(url);
+      if (uri.hasAbsolutePath) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ImageViewerScreen(
+              imageUrl: url,
+              title: 'Photo $index du rapport',
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("L'URL de l'image n'est pas valide"),
+          ),
+        );
+      }
+    } catch (err) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Erreur lors de l'accès à l'image"),
+        ),
+      );
+    }
   }
 
   Widget _buildMoveInsSection(List<MoveIn> moveIns) {

@@ -138,65 +138,81 @@ class _LoginScreenState extends State<LoginScreen> {
       String result = await authService.login(credential);
       if (!mounted) return;
       if (result == "Vous êtes connecté !") {
-        // Vérifier le rôle de l'agent
         final agentService = Provider.of<AgentService>(context, listen: false);
-        final agent = await agentService.getCurrentAgent();
-        
+        await agentService.loadCurrentAgentAndSites();
         if (!mounted) return;
-        
+
+        final agent = agentService.currentAgent;
+
         // Vérifier si l'agent existe dans la base de données
         if (agent == null) {
           await authService.logout();
+          agentService.clearCurrentAgent();
           _showErrorDialog(
             context,
             'Agent non trouvé dans la base de données. Veuillez contacter l\'administrateur.',
           );
           return;
         }
-        
+
         // Vérifier si l'agent a le droit d'accéder à l'app admin
-        // Seuls les responsables et directeurs régionaux peuvent accéder
-        final allowedRoles = [AgentRole.responsable, AgentRole.directeur_regionnal];
+        // Responsables et directeurs : accès complet. Agent : accès aux sites assignés uniquement.
+        final allowedRoles = [AgentRole.responsable, AgentRole.directeur_regionnal, AgentRole.agent];
         if (!allowedRoles.contains(agent.role)) {
           await authService.logout();
+          agentService.clearCurrentAgent();
           _showErrorDialog(
             context,
-            'Cette application est réservée à la supervision et à l\'administration.\n\n'
-            'Votre rôle (${agent.role.displayName}) ne vous permet pas d\'accéder à cette application.\n\n'
-            'Veuillez utiliser l\'application mobile Staff_V2 pour vous connecter avec vos identifiants.',
+            'Votre rôle (${agent.role.displayName}) ne vous permet pas d\'accéder à cette application.',
           );
           return;
         }
-        
-        // Vérifier le statut du compte (uniquement pour les rôles autorisés)
+
+        // Si rôle "agent", il doit avoir au moins un site assigné (agent_sites)
+        if (agent.role == AgentRole.agent) {
+          final siteIds = agentService.allowedSiteIds;
+          if (siteIds == null || siteIds.isEmpty) {
+            await authService.logout();
+            agentService.clearCurrentAgent();
+            _showErrorDialog(
+              context,
+              'Aucun site ne vous est assigné. Veuillez contacter l\'administrateur pour obtenir un accès.',
+            );
+            return;
+          }
+        }
+
+        // Vérifier le statut du compte
         if (agent.statutCompte == AgentStatus.suspendu) {
           await authService.logout();
+          agentService.clearCurrentAgent();
           _showErrorDialog(
             context,
             'Votre compte a été suspendu. Veuillez contacter l\'administrateur.',
           );
           return;
         }
-        
+
         if (agent.statutCompte == AgentStatus.en_attente_confirmation) {
           await authService.logout();
+          agentService.clearCurrentAgent();
           _showErrorDialog(
             context,
             'Votre compte est en attente de confirmation. Veuillez vérifier votre email et confirmer votre compte.',
           );
           return;
         }
-        
-        // Vérifier que le compte est actif
+
         if (agent.statutCompte != AgentStatus.actif) {
           await authService.logout();
+          agentService.clearCurrentAgent();
           _showErrorDialog(
             context,
             'Votre compte n\'est pas actif. Veuillez contacter l\'administrateur.',
           );
           return;
         }
-        
+
         // Rediriger vers l'écran d'accueil admin
         Navigator.pushReplacement(
           context,

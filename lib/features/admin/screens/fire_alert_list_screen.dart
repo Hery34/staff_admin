@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:staff_admin/core/models/fire_alert_report.dart';
+import 'package:staff_admin/core/services/agent_service.dart';
 import 'package:staff_admin/core/services/fire_alert_service.dart';
 import 'package:staff_admin/features/admin/screens/fire_alert_detail_screen.dart';
 import 'package:data_table_2/data_table_2.dart';
@@ -123,19 +124,24 @@ class _FireAlertListScreenState extends State<FireAlertListScreen> {
       appBar: AppBar(
         title: const Text('Rapports d\'Alerte Incendie'),
       ),
-      body: Consumer<FireAlertService>(
-        builder: (context, service, child) {
+      body: Consumer2<FireAlertService, AgentService>(
+        builder: (context, service, agentService, child) {
           if (service.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final filteredReports = _filterReports(service.reports);
+          var reports = service.reports;
+          final allowedSiteIds = agentService.allowedSiteIds;
+          if (allowedSiteIds != null) {
+            reports = reports.where((r) => r.site != null && allowedSiteIds.contains(r.site!)).toList();
+          }
+          final filteredReports = _filterReports(reports);
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                _buildFilters(service.reports),
+                _buildFilters(reports),
                 Expanded(
                   child: isMobile
                       ? _buildMobileList(filteredReports)

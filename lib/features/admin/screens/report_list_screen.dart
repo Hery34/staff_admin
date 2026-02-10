@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:staff_admin/core/models/report.dart';
+import 'package:staff_admin/core/services/agent_service.dart';
 import 'package:staff_admin/core/services/report_service.dart';
 import 'package:staff_admin/features/admin/screens/report_detail_screen.dart';
 import 'package:data_table_2/data_table_2.dart';
@@ -36,6 +37,13 @@ class _ReportListScreenState extends State<ReportListScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Regroupe les rapports par id pour n'avoir qu'une ligne par rapport
+  /// (multi-photos : une tâche peut avoir plusieurs photos → une entrée par photo côté API).
+  List<Report> _uniqueReportsById(List<Report> reports) {
+    final seen = <int>{};
+    return reports.where((r) => seen.add(r.id)).toList();
   }
 
   List<Report> _filterReports(List<Report> reports) {
@@ -77,13 +85,19 @@ class _ReportListScreenState extends State<ReportListScreen> {
       appBar: AppBar(
         title: const Text('Rapports Quotidiens'),
       ),
-      body: Consumer<ReportService>(
-        builder: (context, service, child) {
-          if (service.isLoading) {
+      body: Consumer2<ReportService, AgentService>(
+        builder: (context, reportService, agentService, child) {
+          if (reportService.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final reports = service.reports;
+          // Une ligne par rapport (regrouper si multi-photos)
+          var reports = _uniqueReportsById(reportService.reports);
+          // Filtre par sites autorisés pour le rôle "agent"
+          final allowedSiteIds = agentService.allowedSiteIds;
+          if (allowedSiteIds != null) {
+            reports = reports.where((r) => r.siteId != null && allowedSiteIds.contains(r.siteId!)).toList();
+          }
           final filteredReports = _filterReports(reports);
 
           // Extraire les listes uniques pour les filtres

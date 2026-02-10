@@ -59,6 +59,17 @@ class Report {
     return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
   }
   
+  /// Id du site (pour filtre par sites autorisés pour le rôle agent).
+  int? get siteId {
+    final v = toDoList['site_id'];
+    if (v == null) return null;
+    try {
+      return v is int ? v : int.parse(v.toString());
+    } catch (_) {
+      return null;
+    }
+  }
+
   String get siteDisplay {
     final site = toDoList['site'] as Map<String, dynamic>?;
     if (site == null) return 'Site non spécifié';

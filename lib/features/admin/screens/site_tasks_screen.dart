@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:staff_admin/core/models/task_site.dart';
+import 'package:staff_admin/core/services/agent_service.dart';
 import 'package:staff_admin/core/services/task_site_service.dart';
 
 class SiteTasksScreen extends StatefulWidget {
@@ -27,7 +28,7 @@ class _SiteTasksScreenState extends State<SiteTasksScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: _buildSiteSelector(),
+            child: _buildSiteSelector(context.watch<AgentService>().allowedSiteIds),
           ),
           Expanded(
             child: _selectedSiteId == null
@@ -58,7 +59,7 @@ class _SiteTasksScreenState extends State<SiteTasksScreen> {
     );
   }
 
-  Widget _buildSiteSelector() {
+  Widget _buildSiteSelector(Set<int>? allowedSiteIds) {
     return Consumer<TaskSiteService>(
       builder: (context, service, child) {
         return FutureBuilder<List<Map<String, dynamic>>>(
@@ -72,7 +73,15 @@ class _SiteTasksScreenState extends State<SiteTasksScreen> {
               return Text('Erreur: ${snapshot.error}');
             }
 
-            final sites = snapshot.data ?? [];
+            var sites = snapshot.data ?? [];
+            if (allowedSiteIds != null) {
+              sites = sites.where((s) {
+                final id = s['id'];
+                if (id == null) return false;
+                final i = id is int ? id : int.tryParse(id.toString());
+                return i != null && allowedSiteIds.contains(i);
+              }).toList();
+            }
 
             return DropdownButtonFormField<int>(
               value: _selectedSiteId,

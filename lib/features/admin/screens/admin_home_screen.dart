@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:staff_admin/core/services/auth_service.dart';
+import 'package:staff_admin/core/services/agent_service.dart';
 import 'package:staff_admin/features/admin/screens/fire_alert_list_screen.dart';
 import 'package:staff_admin/features/admin/screens/report_list_screen.dart';
 import 'package:staff_admin/features/admin/screens/site_tasks_screen.dart';
@@ -24,7 +25,8 @@ class AdminHomeScreen extends StatelessWidget {
 
                 if (result == "Déconnexion réussie") {
                   if (!context.mounted) return;
-                  
+                  context.read<AgentService>().clearCurrentAgent();
+                  if (!context.mounted) return;
                   await Navigator.of(context).pushReplacementNamed('/login');
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -62,6 +64,9 @@ class AdminHomeScreen extends StatelessWidget {
           final crossAxisCount = isWebOrDesktop ? 3 : 1;
           final padding = isWebOrDesktop ? 24.0 : 16.0;
           
+          final agentService = context.watch<AgentService>();
+          final showCreateAgent = !agentService.isAgentRole;
+
           return Center(
             child: Container(
               constraints: BoxConstraints(
@@ -72,12 +77,11 @@ class AdminHomeScreen extends StatelessWidget {
                 padding: EdgeInsets.all(padding),
                 mainAxisSpacing: padding,
                 crossAxisSpacing: padding,
-                // Ajuster la taille des cartes sur le web
                 childAspectRatio: isWebOrDesktop ? 1.5 : 1.3,
                 shrinkWrap: isWebOrDesktop,
-                physics: isWebOrDesktop 
-                  ? const NeverScrollableScrollPhysics() 
-                  : const AlwaysScrollableScrollPhysics(),
+                physics: isWebOrDesktop
+                    ? const NeverScrollableScrollPhysics()
+                    : const AlwaysScrollableScrollPhysics(),
                 children: [
                   _buildAnimatedMenuCard(
                     context,
@@ -109,16 +113,17 @@ class AdminHomeScreen extends StatelessWidget {
                     ),
                     2,
                   ),
-                  _buildAnimatedMenuCard(
-                    context,
-                    'Créer un agent',
-                    Icons.person_add,
-                    () => _navigateWithAnimation(
+                  if (showCreateAgent)
+                    _buildAnimatedMenuCard(
                       context,
-                      const CreateAgentScreen(),
+                      'Créer un agent',
+                      Icons.person_add,
+                      () => _navigateWithAnimation(
+                        context,
+                        const CreateAgentScreen(),
+                      ),
+                      3,
                     ),
-                    3,
-                  ),
                 ],
               ),
             ),

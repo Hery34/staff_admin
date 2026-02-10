@@ -9,9 +9,15 @@ class AgentService extends ChangeNotifier {
   final _supabase = SupabaseConfig.supabase;
   List<Agent> _agents = [];
   bool _isLoading = false;
+  Agent? _currentAgent;
+  Set<int>? _allowedSiteIds;
 
   List<Agent> get agents => _agents;
   bool get isLoading => _isLoading;
+  Agent? get currentAgent => _currentAgent;
+  /// Sites autorisés pour l'agent connecté (rôle "agent"). Null = pas de filtre (responsable, directeur).
+  Set<int>? get allowedSiteIds => _allowedSiteIds;
+  bool get isAgentRole => _currentAgent?.role == AgentRole.agent;
 
   /// Crée un nouvel agent dans Supabase Auth et dans la table agent
   /// Génère automatiquement un mot de passe fort
@@ -129,6 +135,43 @@ class AgentService extends ChangeNotifier {
       debugPrint('Erreur lors de la récupération de l\'agent actuel: $e');
       return null;
     }
+  }
+
+  /// Charge l'agent connecté et, si rôle "agent", la liste des sites autorisés (agent_sites).
+  /// À appeler après connexion réussie.
+  Future<void> loadCurrentAgentAndSites() async {
+    _currentAgent = null;
+    _allowedSiteIds = null;
+    try {
+      final agent = await getCurrentAgent();
+      _currentAgent = agent;
+      if (agent == null) return;
+      if (agent.role == AgentRole.agent) {
+        final rows = await _supabase
+            .from('agent_sites')
+            .select('site_id')
+            .eq('agent_id', agent.id);
+        final ids = <int>{};
+        for (final row in rows as List) {
+          final id = row['site_id'];
+          if (id != null) ids.add(int.parse(id.toString()));
+        }
+        _allowedSiteIds = ids;
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Erreur loadCurrentAgentAndSites: $e');
+      _currentAgent = null;
+      _allowedSiteIds = null;
+      notifyListeners();
+    }
+  }
+
+  /// Réinitialise l'agent courant et les sites autorisés (à appeler à la déconnexion).
+  void clearCurrentAgent() {
+    _currentAgent = null;
+    _allowedSiteIds = null;
+    notifyListeners();
   }
 
   /// Appelle le webhook n8n pour envoyer l'email de bienvenue
