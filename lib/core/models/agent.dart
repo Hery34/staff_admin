@@ -122,27 +122,18 @@ class Agent {
   bool get isSuspendu => statutCompte == AgentStatus.suspendu;
 }
 
-/// Génère un mot de passe simple de 8 caractères (lettres et chiffres uniquement)
-String generateStrongPassword({int length = 8}) {
-  const String lowercase = 'abcdefghijklmnopqrstuvwxyz';
-  const String uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const String numbers = '0123456789';
-  const String allChars = '$lowercase$uppercase$numbers';
-  
+/// Mots français sans caractères ambigus (i, l, I, L, o, O) ni chiffres.
+/// Génère une passphrase facile à lire et dicter pour un mot de passe provisoire.
+const _passphraseWords = [
+  'Pomme', 'Arbre', 'Vent', 'Porte', 'Maison', 'Cafe', 'Eau', 'Feu',
+  'Forme', 'Fort', 'Corps', 'Nord', 'Port', 'Part', 'Carte', 'Vente',
+  'Temps', 'Coup', 'Debut', 'Effort', 'Enfant', 'Grand', 'Groupe',
+  'Haut', 'Homme', 'Mort', 'Tortue', 'Vert', 'Banane', 'Orange',
+];
+
+/// Génère un mot de passe provisoire : 3 mots concaténés, sans chiffres.
+/// Évite les caractères ambigus (I/L/1, O/0) pour faciliter la saisie.
+String generateStrongPassword({int wordCount = 3}) {
   final random = Random.secure();
-  final password = StringBuffer();
-  
-  // S'assurer d'avoir au moins une lettre minuscule, une majuscule et un chiffre
-  password.write(lowercase[random.nextInt(lowercase.length)]);
-  password.write(uppercase[random.nextInt(uppercase.length)]);
-  password.write(numbers[random.nextInt(numbers.length)]);
-  
-  // Remplir le reste avec des caractères aléatoires (lettres et chiffres)
-  for (int i = password.length; i < length; i++) {
-    password.write(allChars[random.nextInt(allChars.length)]);
-  }
-  
-  // Mélanger les caractères
-  final passwordList = password.toString().split('')..shuffle(random);
-  return passwordList.join();
+  return List.generate(wordCount, (_) => _passphraseWords[random.nextInt(_passphraseWords.length)]).join();
 }

@@ -193,7 +193,7 @@ class _CreateAgentScreenState extends State<CreateAgentScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Un mot de passe fort sera généré automatiquement et envoyé par email après confirmation.',
+                        'Une passphrase (3 mots) sera générée automatiquement et envoyée par email après confirmation.',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.blue.shade900,

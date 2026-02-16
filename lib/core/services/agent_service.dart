@@ -31,7 +31,7 @@ class AgentService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // 1. Générer un mot de passe simple de 8 caractères (lettres et chiffres uniquement)
+      // 1. Générer une passphrase (3 mots) sans caractères ambigus
       final generatedPassword = generateStrongPassword();
 
       // 2. Créer l'utilisateur dans Supabase Auth
