@@ -6,6 +6,8 @@ import 'package:staff_admin/core/models/move_in.dart';
 import 'package:staff_admin/core/models/move_out.dart';
 import 'package:staff_admin/core/models/ovl.dart';
 
+import 'package:staff_admin/core/models/site_day_task.dart';
+
 class ReportService extends ChangeNotifier {
   final _supabase = SupabaseConfig.supabase;
   List<Report> _reports = [];
@@ -15,12 +17,31 @@ class ReportService extends ChangeNotifier {
   final Map<int, List<Ovl>> _ovlsByReport = {};
   bool _isLoading = false;
 
+  // Activités par site + date (avec ou sans rapport clôturé)
+  List<MoveIn> _siteDayMoveIns = [];
+  List<MoveOut> _siteDayMoveOuts = [];
+  List<Ovl> _siteDayOvls = [];
+  List<SiteDayTask> _siteDayTasks = [];
+  List<Map<String, dynamic>> _siteDayReports = [];
+  bool _siteDayLoading = false;
+  int? _siteDaySiteId;
+  DateTime? _siteDayDate;
+
   List<Report> get reports => _reports;
   List<ReportDetail>? getDetailsForReport(int reportId) => _detailsByReport[reportId];
   List<MoveIn>? getMoveInsForReport(int reportId) => _moveInsByReport[reportId];
   List<MoveOut>? getMoveOutsForReport(int reportId) => _moveOutsByReport[reportId];
   List<Ovl>? getOvlsForReport(int reportId) => _ovlsByReport[reportId];
   bool get isLoading => _isLoading;
+
+  List<MoveIn> get siteDayMoveIns => _siteDayMoveIns;
+  List<MoveOut> get siteDayMoveOuts => _siteDayMoveOuts;
+  List<Ovl> get siteDayOvls => _siteDayOvls;
+  List<SiteDayTask> get siteDayTasks => _siteDayTasks;
+  List<Map<String, dynamic>> get siteDayReports => _siteDayReports;
+  bool get siteDayLoading => _siteDayLoading;
+  int? get siteDaySiteId => _siteDaySiteId;
+  DateTime? get siteDayDate => _siteDayDate;
 
   Future<void> loadReports() async {
     _isLoading = true;
@@ -198,6 +219,62 @@ class ReportService extends ChangeNotifier {
       _moveInsByReport[reportId] = [];
       _moveOutsByReport[reportId] = [];
       _ovlsByReport[reportId] = [];
+    }
+  }
+
+  /// Charge toutes les activités d'un site pour une date donnée (avec ou sans journées clôturées).
+  /// Permet de voir ce qui a été fait même si les agents n'ont pas clôturé leur journée par PIN.
+  Future<void> loadActivitiesBySiteAndDate(int siteId, DateTime date) async {
+    _siteDayLoading = true;
+    _siteDaySiteId = siteId;
+    _siteDayDate = date;
+    notifyListeners();
+
+    try {
+      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final response = await _supabase.rpc(
+        'get_activities_by_site_and_date',
+        params: {
+          'site_id_param': siteId,
+          'date_param': dateStr,
+        },
+      );
+
+      if (response == null) {
+        _siteDayMoveIns = [];
+        _siteDayMoveOuts = [];
+        _siteDayOvls = [];
+        _siteDayTasks = [];
+        _siteDayReports = [];
+        return;
+      }
+
+      final data = response as Map<String, dynamic>;
+
+      final moveInsJson = data['move_ins'] as List<dynamic>? ?? [];
+      _siteDayMoveIns = moveInsJson.map<MoveIn>((j) => MoveIn.fromJson(j as Map<String, dynamic>)).toList();
+
+      final moveOutsJson = data['move_outs'] as List<dynamic>? ?? [];
+      _siteDayMoveOuts = moveOutsJson.map<MoveOut>((j) => MoveOut.fromJson(j as Map<String, dynamic>)).toList();
+
+      final ovlsJson = data['ovls'] as List<dynamic>? ?? [];
+      _siteDayOvls = ovlsJson.map<Ovl>((j) => Ovl.fromJson(j as Map<String, dynamic>)).toList();
+
+      final tasksJson = data['tasks'] as List<dynamic>? ?? [];
+      _siteDayTasks = tasksJson.map<SiteDayTask>((j) => SiteDayTask.fromJson(j as Map<String, dynamic>)).toList();
+
+      final reportsJson = data['reports'] as List<dynamic>? ?? [];
+      _siteDayReports = reportsJson.map<Map<String, dynamic>>((j) => Map<String, dynamic>.from(j as Map)).toList();
+    } catch (e) {
+      debugPrint('Error loading activities by site/date: $e');
+      _siteDayMoveIns = [];
+      _siteDayMoveOuts = [];
+      _siteDayOvls = [];
+      _siteDayTasks = [];
+      _siteDayReports = [];
+    } finally {
+      _siteDayLoading = false;
+      notifyListeners();
     }
   }
 } 

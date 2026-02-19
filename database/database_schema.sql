@@ -131,8 +131,14 @@ CREATE TABLE public.ovl (
   date_time timestamp with time zone,
   customer_id text,
   operator bigint,
+  ovl_removed boolean DEFAULT false,
+  removed_date timestamp with time zone,
+  removing_operator bigint,
+  site bigint,
   CONSTRAINT ovl_pkey PRIMARY KEY (id),
-  CONSTRAINT ovl_operator_fkey FOREIGN KEY (operator) REFERENCES public.agent(id)
+  CONSTRAINT ovl_operator_fkey FOREIGN KEY (operator) REFERENCES public.agent(id),
+  CONSTRAINT ovl_removing_operator_fkey FOREIGN KEY (removing_operator) REFERENCES public.agent(id),
+  CONSTRAINT ovl_site_fkey FOREIGN KEY (site) REFERENCES public.site(id)
 );
 CREATE TABLE public.report (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL UNIQUE,
@@ -301,7 +307,9 @@ BEGIN
       )
       FROM ovl o
       LEFT JOIN agent a ON o.operator = a.id
-      WHERE o.date_time::date = report_date
+      WHERE o.site = site_id_val
+        AND o.date_time::date = report_date
+        AND (o.ovl_removed IS NULL OR o.ovl_removed = false)
     )
   ) INTO result;
   

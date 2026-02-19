@@ -7,6 +7,7 @@ import 'package:staff_admin/core/services/fire_alert_service.dart';
 import 'package:staff_admin/core/services/report_service.dart';
 import 'package:staff_admin/core/services/task_site_service.dart';
 import 'package:staff_admin/core/services/agent_site_service.dart';
+import 'package:staff_admin/core/services/stats_service.dart';
 import 'package:staff_admin/features/admin/screens/login_screen.dart';
 import 'package:staff_admin/features/admin/screens/admin_home_screen.dart';
 
@@ -22,6 +23,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ReportService()),
         ChangeNotifierProvider(create: (_) => TaskSiteService()),
         ChangeNotifierProvider(create: (_) => AgentSiteService()),
+        ChangeNotifierProvider(create: (_) => StatsService()),
       ],
       child: const MyApp(),
     ),
@@ -41,6 +43,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ReportService()),
         ChangeNotifierProvider(create: (_) => TaskSiteService()),
         ChangeNotifierProvider(create: (_) => AgentSiteService()),
+        ChangeNotifierProvider(create: (_) => StatsService()),
       ],
       child: MaterialApp(
         title: 'Staff Admin Annexx',

@@ -5,8 +5,10 @@ import 'package:staff_admin/core/services/agent_service.dart';
 import 'package:staff_admin/features/admin/screens/fire_alert_list_screen.dart';
 import 'package:staff_admin/features/admin/screens/report_list_screen.dart';
 import 'package:staff_admin/features/admin/screens/site_tasks_screen.dart';
+import 'package:staff_admin/features/admin/screens/site_day_activities_screen.dart';
 import 'package:staff_admin/features/admin/screens/create_agent_screen.dart';
 import 'package:staff_admin/features/admin/screens/agent_sites_screen.dart';
+import 'package:staff_admin/features/admin/screens/stats_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -106,13 +108,33 @@ class AdminHomeScreen extends StatelessWidget {
                   ),
                   _buildAnimatedMenuCard(
                     context,
+                    'Activités du jour par site',
+                    Icons.calendar_view_day,
+                    () => _navigateWithAnimation(
+                      context,
+                      const SiteDayActivitiesScreen(),
+                    ),
+                    2,
+                  ),
+                  _buildAnimatedMenuCard(
+                    context,
+                    'Statistiques',
+                    Icons.bar_chart,
+                    () => _navigateWithAnimation(
+                      context,
+                      const StatsScreen(),
+                    ),
+                    3,
+                  ),
+                  _buildAnimatedMenuCard(
+                    context,
                     'Tâches par Site',
                     Icons.task_alt,
                     () => _navigateWithAnimation(
                       context,
                       const SiteTasksScreen(),
                     ),
-                    2,
+                    4,
                   ),
                   if (showCreateAgent)
                     _buildAnimatedMenuCard(
@@ -123,7 +145,7 @@ class AdminHomeScreen extends StatelessWidget {
                         context,
                         const AgentSitesScreen(),
                       ),
-                      4,
+                      5,
                     ),
                   if (showCreateAgent)
                     _buildAnimatedMenuCard(
@@ -134,7 +156,7 @@ class AdminHomeScreen extends StatelessWidget {
                         context,
                         const CreateAgentScreen(),
                       ),
-                      5,
+                      6,
                     ),
                 ],
               ),
