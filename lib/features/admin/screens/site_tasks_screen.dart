@@ -17,6 +17,16 @@ class _SiteTasksScreenState extends State<SiteTasksScreen> {
   String? _selectedSiteName;
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        context.read<AgentService>().loadCurrentAgentAndSites();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
 

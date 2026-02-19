@@ -220,8 +220,26 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                     ],
                     rows: taskRows.map((row) {
                       return DataRow(
+                        onSelectChanged: (_) => _showTaskDetailDialog(row),
                         cells: [
-                          DataCell(Text(row.taskName ?? 'Tâche ${row.task}')),
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Expanded(
+                                  child: Text(row.taskName ?? 'Tâche ${row.task}'),
+                                ),
+                                Tooltip(
+                                  message: 'Cliquer pour voir le détail',
+                                  child: Icon(
+                                    Icons.info_outline,
+                                    size: 18,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                           DataCell(
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -313,6 +331,163 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  void _showTaskDetailDialog(
+    ({int task, String? taskName, String? comment, List<ReportDetail> details}) row,
+  ) {
+    final navigator = Navigator.of(context);
+    final scaffoldContext = context;
+    final photos = row.details
+        .where((d) => d.photoUrl != null && d.photoUrl!.trim().isNotEmpty)
+        .toList();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.task_alt, color: Colors.green),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                row.taskName ?? 'Tâche ${row.task}',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Commentaire',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SelectableText(
+                    row.comment?.trim().isNotEmpty == true
+                        ? row.comment!
+                        : 'Aucun commentaire',
+                    style: TextStyle(
+                      color: row.comment?.trim().isNotEmpty == true
+                          ? null
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                if (photos.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  Text(
+                    'Photos (${photos.length})',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: photos.asMap().entries.map((e) {
+                      final url = e.value.photoUrl!;
+                      final index = e.key + 1;
+                      return InkWell(
+                        onTap: () {
+                          navigator.pop();
+                          Navigator.of(scaffoldContext).push(
+                            MaterialPageRoute(
+                              builder: (context) => ImageViewerScreen(
+                                imageUrl: url,
+                                title: 'Photo $index - ${row.taskName ?? "Tâche"}',
+                              ),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: 80,
+                            height: 80,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.network(
+                                  url,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (ctx, child, progress) {
+                                    if (progress == null) return child;
+                                    return Container(
+                                      color: Theme.of(context)
+                                          .colorScheme.surfaceContainerHighest,
+                                      child: const Center(
+                                        child: SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Theme.of(context)
+                                        .colorScheme.errorContainer
+                                        .withValues(alpha: 0.3),
+                                    child: const Icon(Icons.broken_image_outlined),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 4,
+                                  right: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '$index',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
     );
   }
 

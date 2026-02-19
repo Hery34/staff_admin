@@ -138,7 +138,7 @@ class AgentService extends ChangeNotifier {
   }
 
   /// Charge l'agent connecté et, si rôle "agent", la liste des sites autorisés (agent_sites).
-  /// À appeler après connexion réussie.
+  /// À appeler après connexion réussie. Charge TOUS les sites rattachés à l'agent.
   Future<void> loadCurrentAgentAndSites() async {
     _currentAgent = null;
     _allowedSiteIds = null;
@@ -147,16 +147,27 @@ class AgentService extends ChangeNotifier {
       _currentAgent = agent;
       if (agent == null) return;
       if (agent.role == AgentRole.agent) {
-        final rows = await _supabase
+        final response = await _supabase
             .from('agent_sites')
             .select('site_id')
             .eq('agent_id', agent.id);
+
+        // Supabase retourne toujours une List ; gérer les deux cas par sécurité
+        final rows = response is List ? response : (response != null ? [response] : <dynamic>[]);
         final ids = <int>{};
-        for (final row in rows as List) {
-          final id = row['site_id'];
-          if (id != null) ids.add(int.parse(id.toString()));
+        for (final item in rows) {
+          if (item is! Map) continue;
+          final id = item['site_id'];
+          if (id != null) {
+            try {
+              ids.add(int.parse(id.toString()));
+            } catch (_) {
+              debugPrint('Valeur site_id invalide: $id');
+            }
+          }
         }
         _allowedSiteIds = ids;
+        debugPrint('Agent ${agent.id}: ${ids.length} site(s) autorisé(s) -> $ids');
       }
       notifyListeners();
     } catch (e) {

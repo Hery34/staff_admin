@@ -23,7 +23,9 @@ class _FireAlertListScreenState extends State<FireAlertListScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      if(mounted) {
+      if (mounted) {
+        // Rafraîchir les sites autorisés (au cas où ils auraient été modifiés)
+        context.read<AgentService>().loadCurrentAgentAndSites();
         context.read<FireAlertService>().loadReports();
       }
     });

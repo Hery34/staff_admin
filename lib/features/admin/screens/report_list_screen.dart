@@ -27,7 +27,9 @@ class _ReportListScreenState extends State<ReportListScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      if(mounted) {
+      if (mounted) {
+        // Rafraîchir les sites autorisés (au cas où ils auraient été modifiés)
+        context.read<AgentService>().loadCurrentAgentAndSites();
         context.read<ReportService>().loadReports();
       }
     });
