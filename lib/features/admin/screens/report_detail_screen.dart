@@ -31,9 +31,13 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     Future.microtask(() async {
       if (!mounted) return;
       final service = context.read<ReportService>();
-      // S'assurer que la liste des rapports est chargée (nécessaire quand on arrive
-      // depuis "Activités du jour par site" sans passer par la liste des rapports)
-      final reportExists = service.reports.any((r) => r.id == widget.reportId);
+      var reportExists = service.reports.any((r) => r.id == widget.reportId);
+      if (!reportExists) {
+        // Essayer d'abord via RPC (bypass RLS) pour les accès depuis "Activités du jour par site"
+        // en déploiement où loadReports peut être filtré par RLS
+        final loaded = await service.loadReportById(widget.reportId);
+        reportExists = loaded != null;
+      }
       if (!reportExists) {
         await service.loadReports();
       }

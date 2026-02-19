@@ -43,6 +43,29 @@ class ReportService extends ChangeNotifier {
   int? get siteDaySiteId => _siteDaySiteId;
   DateTime? get siteDayDate => _siteDayDate;
 
+  /// Charge un seul rapport par ID via RPC (bypass RLS).
+  /// Utile quand on arrive depuis "Activités du jour par site" et que loadReports
+  /// ne retourne pas le rapport (RLS en production).
+  Future<Report?> loadReportById(int reportId) async {
+    try {
+      final response = await _supabase.rpc(
+        'get_report_by_id',
+        params: {'report_id_param': reportId},
+      );
+      if (response == null) return null;
+      final json = response as Map<String, dynamic>;
+      final report = Report.fromJson(json);
+      if (!_reports.any((r) => r.id == reportId)) {
+        _reports = [report, ..._reports];
+        notifyListeners();
+      }
+      return report;
+    } catch (e) {
+      debugPrint('Error loading report by id $reportId: $e');
+      return null;
+    }
+  }
+
   Future<void> loadReports() async {
     _isLoading = true;
     notifyListeners();
