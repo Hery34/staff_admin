@@ -28,10 +28,17 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      if(mounted) {
-        context.read<ReportService>().loadDetailsForReport(widget.reportId);
+    Future.microtask(() async {
+      if (!mounted) return;
+      final service = context.read<ReportService>();
+      // S'assurer que la liste des rapports est chargée (nécessaire quand on arrive
+      // depuis "Activités du jour par site" sans passer par la liste des rapports)
+      final reportExists = service.reports.any((r) => r.id == widget.reportId);
+      if (!reportExists) {
+        await service.loadReports();
       }
+      if (!mounted) return;
+      service.loadDetailsForReport(widget.reportId);
     });
   }
 
