@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:staff_admin/core/config/supabase_config.dart';
 import 'package:staff_admin/core/models/site_closure_stat.dart';
 import 'package:staff_admin/core/models/agent_report_stat.dart';
+import 'package:staff_admin/core/models/ovl_delay_stat.dart';
 
 class StatsService extends ChangeNotifier {
   final _supabase = SupabaseConfig.supabase;
 
   List<SiteClosureStat> _closureBySite = [];
   List<AgentReportStat> _topAgents = [];
+  List<OvlDelayStat> _ovlDelayBySite = [];
   int _expectedWorkingDays = 0;
   DateTime? _startDate;
   DateTime? _endDate;
@@ -15,6 +17,7 @@ class StatsService extends ChangeNotifier {
 
   List<SiteClosureStat> get closureBySite => _closureBySite;
   List<AgentReportStat> get topAgents => _topAgents;
+  List<OvlDelayStat> get ovlDelayBySite => _ovlDelayBySite;
   int get expectedWorkingDays => _expectedWorkingDays;
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
@@ -25,8 +28,10 @@ class StatsService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final startStr = '${start.year}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
-      final endStr = '${end.year}-${end.month.toString().padLeft(2, '0')}-${end.day.toString().padLeft(2, '0')}';
+      final startStr =
+          '${start.year}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
+      final endStr =
+          '${end.year}-${end.month.toString().padLeft(2, '0')}-${end.day.toString().padLeft(2, '0')}';
 
       final response = await _supabase.rpc(
         'get_report_stats',
@@ -39,6 +44,7 @@ class StatsService extends ChangeNotifier {
       if (response == null) {
         _closureBySite = [];
         _topAgents = [];
+        _ovlDelayBySite = [];
         _expectedWorkingDays = 0;
         return;
       }
@@ -46,21 +52,31 @@ class StatsService extends ChangeNotifier {
       final data = response as Map<String, dynamic>;
       _startDate = start;
       _endDate = end;
-      _expectedWorkingDays = int.tryParse(data['expected_working_days']?.toString() ?? '0') ?? 0;
+      _expectedWorkingDays =
+          int.tryParse(data['expected_working_days']?.toString() ?? '0') ?? 0;
 
       final closureJson = data['closure_by_site'] as List<dynamic>? ?? [];
       _closureBySite = closureJson
-          .map<SiteClosureStat>((j) => SiteClosureStat.fromJson(j as Map<String, dynamic>))
+          .map<SiteClosureStat>(
+              (j) => SiteClosureStat.fromJson(j as Map<String, dynamic>))
+          .toList();
+
+      final ovlDelayJson = data['ovl_delay_by_site'] as List<dynamic>? ?? [];
+      _ovlDelayBySite = ovlDelayJson
+          .map<OvlDelayStat>(
+              (j) => OvlDelayStat.fromJson(j as Map<String, dynamic>))
           .toList();
 
       final agentsJson = data['top_agents'] as List<dynamic>? ?? [];
       _topAgents = agentsJson
-          .map<AgentReportStat>((j) => AgentReportStat.fromJson(j as Map<String, dynamic>))
+          .map<AgentReportStat>(
+              (j) => AgentReportStat.fromJson(j as Map<String, dynamic>))
           .toList();
     } catch (e) {
       debugPrint('Error loading report stats: $e');
       _closureBySite = [];
       _topAgents = [];
+      _ovlDelayBySite = [];
       _expectedWorkingDays = 0;
     } finally {
       _isLoading = false;

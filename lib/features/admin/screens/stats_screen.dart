@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:staff_admin/core/models/agent_report_stat.dart';
 import 'package:staff_admin/core/models/site_closure_stat.dart';
+import 'package:staff_admin/core/models/ovl_delay_stat.dart';
 import 'package:staff_admin/core/services/agent_service.dart';
 import 'package:staff_admin/core/services/stats_service.dart';
 import 'package:data_table_2/data_table_2.dart';
@@ -58,6 +59,13 @@ class _StatsScreenState extends State<StatsScreen> {
             sites = sites.where((s) => allowedIds.contains(s.siteId)).toList();
           }
 
+          var ovlDelayBySite = statsService.ovlDelayBySite;
+          if (allowedIds != null) {
+            ovlDelayBySite = ovlDelayBySite
+                .where((s) => allowedIds.contains(s.siteId))
+                .toList();
+          }
+
           final agents = statsService.topAgents;
 
           return SingleChildScrollView(
@@ -68,6 +76,8 @@ class _StatsScreenState extends State<StatsScreen> {
                 _buildPeriodSelector(statsService),
                 const SizedBox(height: 24),
                 _buildClosureBySite(sites, statsService.expectedWorkingDays),
+                const SizedBox(height: 24),
+                _buildOvlDelayBySite(ovlDelayBySite),
                 const SizedBox(height: 24),
                 _buildTopAgents(agents),
               ],
@@ -105,7 +115,8 @@ class _StatsScreenState extends State<StatsScreen> {
                       context: context,
                       firstDate: DateTime(2020),
                       lastDate: DateTime.now(),
-                      initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
+                      initialDateRange:
+                          DateTimeRange(start: _startDate, end: _endDate),
                     );
                     if (range != null) {
                       setState(() {
@@ -144,9 +155,11 @@ class _StatsScreenState extends State<StatsScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.analytics, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.analytics,
+                    color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
-                Text('Taux de clôture par site', style: Theme.of(context).textTheme.titleLarge),
+                Text('Taux de clôture par site',
+                    style: Theme.of(context).textTheme.titleLarge),
               ],
             ),
             const SizedBox(height: 8),
@@ -164,7 +177,8 @@ class _StatsScreenState extends State<StatsScreen> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: SizedBox(
-                  width: (MediaQuery.of(context).size.width - 32).clamp(500.0, double.infinity),
+                  width: (MediaQuery.of(context).size.width - 32)
+                      .clamp(500.0, double.infinity),
                   height: _tableHeight(sites.length),
                   child: DataTable2(
                     columnSpacing: 12,
@@ -183,12 +197,14 @@ class _StatsScreenState extends State<StatsScreen> {
                               : Colors.red;
                       return DataRow(
                         cells: [
-                          DataCell(Text(s.siteDisplay, overflow: TextOverflow.ellipsis)),
+                          DataCell(Text(s.siteDisplay,
+                              overflow: TextOverflow.ellipsis)),
                           DataCell(Text('${s.reportsCount}')),
                           DataCell(Text('${s.expectedDays}')),
                           DataCell(
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: color.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(8),
@@ -214,6 +230,76 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
+  Widget _buildOvlDelayBySite(List<OvlDelayStat> stats) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.lock_clock,
+                    color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('Délai moyen retrait OVL',
+                    style: Theme.of(context).textTheme.titleLarge),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Moyenne en jours entre la pose et le retrait (OVL retirées sur la période).',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            if (stats.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('Aucune OVL retirée sur la période')),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: (MediaQuery.of(context).size.width - 32)
+                      .clamp(500.0, double.infinity),
+                  height: _tableHeight(stats.length),
+                  child: DataTable2(
+                    columnSpacing: 12,
+                    minWidth: 450,
+                    columns: const [
+                      DataColumn2(label: Text('Site'), size: ColumnSize.L),
+                      DataColumn2(
+                          label: Text('OVL retirées'), size: ColumnSize.M),
+                      DataColumn2(
+                          label: Text('Délai moyen (jours)'),
+                          size: ColumnSize.M),
+                    ],
+                    rows: stats
+                        .map((s) => DataRow(
+                              cells: [
+                                DataCell(Text(s.siteDisplay,
+                                    overflow: TextOverflow.ellipsis)),
+                                DataCell(Text('${s.removedCount}')),
+                                DataCell(
+                                  Text(
+                                    s.avgDelayDays.toStringAsFixed(2),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTopAgents(List<AgentReportStat> agents) {
     return Card(
       child: Padding(
@@ -223,9 +309,11 @@ class _StatsScreenState extends State<StatsScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.emoji_events, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.emoji_events,
+                    color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
-                Text('Top agents clôturants', style: Theme.of(context).textTheme.titleLarge),
+                Text('Top agents clôturants',
+                    style: Theme.of(context).textTheme.titleLarge),
               ],
             ),
             const SizedBox(height: 8),
@@ -252,7 +340,9 @@ class _StatsScreenState extends State<StatsScreen> {
                     leading: CircleAvatar(
                       backgroundColor: rank <= 3
                           ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.surfaceContainerHighest,
+                          : Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                       child: Text(
                         '$rank',
                         style: TextStyle(

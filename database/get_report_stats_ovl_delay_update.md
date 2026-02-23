@@ -1,9 +1,8 @@
--- Statistiques de clôture des rapports
--- Taux de clôture par site (5 jours ouvrés/semaine),
--- délai moyen OVL (pose -> retrait) par site, et top agents.
---
--- À exécuter dans Supabase SQL Editor
+# Mise à jour SQL: statistique délai moyen OVL (pose -> retrait) par site
 
+Exécute ce script dans **Supabase SQL Editor**.
+
+```sql
 CREATE OR REPLACE FUNCTION get_report_stats(
   start_date_param date,
   end_date_param date
@@ -95,3 +94,4 @@ BEGIN
   RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+```

@@ -8,6 +8,8 @@ import 'package:staff_admin/features/admin/screens/site_tasks_screen.dart';
 import 'package:staff_admin/features/admin/screens/site_day_activities_screen.dart';
 import 'package:staff_admin/features/admin/screens/create_agent_screen.dart';
 import 'package:staff_admin/features/admin/screens/agent_sites_screen.dart';
+import 'package:staff_admin/features/admin/screens/movements_screen.dart';
+import 'package:staff_admin/features/admin/screens/ovl_by_site_screen.dart';
 import 'package:staff_admin/features/admin/screens/stats_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
@@ -66,7 +68,7 @@ class AdminHomeScreen extends StatelessWidget {
           final isWebOrDesktop = constraints.maxWidth > 600;
           final crossAxisCount = isWebOrDesktop ? 3 : 1;
           final padding = isWebOrDesktop ? 24.0 : 16.0;
-          
+
           final agentService = context.watch<AgentService>();
           final showCreateAgent = !agentService.isAgentRole;
 
@@ -118,13 +120,23 @@ class AdminHomeScreen extends StatelessWidget {
                   ),
                   _buildAnimatedMenuCard(
                     context,
+                    'Mouvements',
+                    Icons.swap_horiz,
+                    () => _navigateWithAnimation(
+                      context,
+                      const MovementsScreen(),
+                    ),
+                    3,
+                  ),
+                  _buildAnimatedMenuCard(
+                    context,
                     'Statistiques',
                     Icons.bar_chart,
                     () => _navigateWithAnimation(
                       context,
                       const StatsScreen(),
                     ),
-                    3,
+                    4,
                   ),
                   _buildAnimatedMenuCard(
                     context,
@@ -134,7 +146,17 @@ class AdminHomeScreen extends StatelessWidget {
                       context,
                       const SiteTasksScreen(),
                     ),
-                    4,
+                    5,
+                  ),
+                  _buildAnimatedMenuCard(
+                    context,
+                    'OVL par site',
+                    Icons.lock_clock,
+                    () => _navigateWithAnimation(
+                      context,
+                      const OvlBySiteScreen(),
+                    ),
+                    6,
                   ),
                   if (showCreateAgent)
                     _buildAnimatedMenuCard(
@@ -145,7 +167,7 @@ class AdminHomeScreen extends StatelessWidget {
                         context,
                         const AgentSitesScreen(),
                       ),
-                      5,
+                      7,
                     ),
                   if (showCreateAgent)
                     _buildAnimatedMenuCard(
@@ -156,7 +178,7 @@ class AdminHomeScreen extends StatelessWidget {
                         context,
                         const CreateAgentScreen(),
                       ),
-                      6,
+                      8,
                     ),
                 ],
               ),
@@ -167,7 +189,8 @@ class AdminHomeScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _navigateWithAnimation(BuildContext context, Widget screen) async {
+  Future<void> _navigateWithAnimation(
+      BuildContext context, Widget screen) async {
     await Navigator.push(
       context,
       PageRouteBuilder(
@@ -226,58 +249,67 @@ class AdminHomeScreen extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Theme.of(context).colorScheme.primary.withValues(alpha:0.8),
+                    Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.8),
                     Theme.of(context).colorScheme.primary,
                   ],
                 ),
               ),
               child: isWebOrDesktop
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        icon,
-                        size: 32,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(width: 16),
-                      Flexible(
-                        child: Text(
-                          title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          icon,
+                          size: 32,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 16),
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                         ),
-                      ),
-                    ],
-                  )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        icon,
-                        size: 48,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          title,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                      ],
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          icon,
+                          size: 48,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
             ),
           ),
         ),
       ),
     );
   }
-} 
+}
