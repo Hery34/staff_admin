@@ -91,6 +91,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
           final moveIns = service.getMoveInsForReport(widget.reportId) ?? [];
           final moveOuts = service.getMoveOutsForReport(widget.reportId) ?? [];
           final ovls = service.getOvlsForReport(widget.reportId) ?? [];
+          final ovlsRemoved = service.getOvlsRemovedForReport(widget.reportId) ?? [];
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -106,6 +107,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 _buildMoveOutsSection(moveOuts),
                 const SizedBox(height: 24),
                 _buildOvlsSection(ovls),
+                const SizedBox(height: 24),
+                _buildOvlsRemovedSection(ovlsRemoved),
               ],
             ),
           );
@@ -735,6 +738,72 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                           DataCell(Text(ovl.formattedDateTime)),
                           DataCell(Text(ovl.customerId ?? '-')),
                           DataCell(Text(ovl.operatorName)),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOvlsRemovedSection(List<Ovl> ovlsRemoved) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.lock_open, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'OVL retirées du jour (${ovlsRemoved.length})',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (ovlsRemoved.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('Aucune OVL retirée pour ce jour'),
+                ),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: (MediaQuery.of(context).size.width - 32).clamp(700.0, double.infinity),
+                  height: _calculateTableHeight(ovlsRemoved.length),
+                  child: DataTable2(
+                    columnSpacing: 12,
+                    horizontalMargin: 12,
+                    minWidth: 700,
+                    columns: const [
+                      DataColumn2(label: Text('Numéro'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Code'), size: ColumnSize.S),
+                      DataColumn2(label: Text('Date pose'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Date retrait'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Client ID'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Opérateur'), size: ColumnSize.M),
+                      DataColumn2(label: Text('Retiré par'), size: ColumnSize.M),
+                    ],
+                    rows: ovlsRemoved.map((ovl) {
+                      return DataRow(
+                        cells: [
+                          DataCell(Text(ovl.number ?? '-')),
+                          DataCell(Text(ovl.code?.toString() ?? '-')),
+                          DataCell(Text(ovl.formattedDateTime)),
+                          DataCell(Text(ovl.formattedRemovedDate)),
+                          DataCell(Text(ovl.customerId ?? '-')),
+                          DataCell(Text(ovl.operatorName)),
+                          DataCell(Text(ovl.removingOperatorName)),
                         ],
                       );
                     }).toList(),

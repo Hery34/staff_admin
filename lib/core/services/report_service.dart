@@ -15,12 +15,14 @@ class ReportService extends ChangeNotifier {
   final Map<int, List<MoveIn>> _moveInsByReport = {};
   final Map<int, List<MoveOut>> _moveOutsByReport = {};
   final Map<int, List<Ovl>> _ovlsByReport = {};
+  final Map<int, List<Ovl>> _ovlsRemovedByReport = {};
   bool _isLoading = false;
 
   // Activités par site + date (avec ou sans rapport clôturé)
   List<MoveIn> _siteDayMoveIns = [];
   List<MoveOut> _siteDayMoveOuts = [];
   List<Ovl> _siteDayOvls = [];
+  List<Ovl> _siteDayOvlsRemoved = [];
   List<SiteDayTask> _siteDayTasks = [];
   List<Map<String, dynamic>> _siteDayReports = [];
   bool _siteDayLoading = false;
@@ -32,11 +34,13 @@ class ReportService extends ChangeNotifier {
   List<MoveIn>? getMoveInsForReport(int reportId) => _moveInsByReport[reportId];
   List<MoveOut>? getMoveOutsForReport(int reportId) => _moveOutsByReport[reportId];
   List<Ovl>? getOvlsForReport(int reportId) => _ovlsByReport[reportId];
+  List<Ovl>? getOvlsRemovedForReport(int reportId) => _ovlsRemovedByReport[reportId];
   bool get isLoading => _isLoading;
 
   List<MoveIn> get siteDayMoveIns => _siteDayMoveIns;
   List<MoveOut> get siteDayMoveOuts => _siteDayMoveOuts;
   List<Ovl> get siteDayOvls => _siteDayOvls;
+  List<Ovl> get siteDayOvlsRemoved => _siteDayOvlsRemoved;
   List<SiteDayTask> get siteDayTasks => _siteDayTasks;
   List<Map<String, dynamic>> get siteDayReports => _siteDayReports;
   bool get siteDayLoading => _siteDayLoading;
@@ -195,6 +199,7 @@ class ReportService extends ChangeNotifier {
         _moveInsByReport[reportId] = [];
         _moveOutsByReport[reportId] = [];
         _ovlsByReport[reportId] = [];
+        _ovlsRemovedByReport[reportId] = [];
         return;
       }
 
@@ -236,12 +241,25 @@ class ReportService extends ChangeNotifier {
         }
       }).toList();
 
+      // Parse OVLs retirées
+      final ovlsRemovedJson = data['ovls_removed'] as List<dynamic>? ?? [];
+      _ovlsRemovedByReport[reportId] = ovlsRemovedJson.map<Ovl>((json) {
+        try {
+          return Ovl.fromJson(json as Map<String, dynamic>);
+        } catch (e) {
+          debugPrint('Error parsing OVL removed: $json');
+          debugPrint('Error details: $e');
+          rethrow;
+        }
+      }).toList();
+
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading daily activities for report $reportId: $e');
       _moveInsByReport[reportId] = [];
       _moveOutsByReport[reportId] = [];
       _ovlsByReport[reportId] = [];
+      _ovlsRemovedByReport[reportId] = [];
     }
   }
 
@@ -267,6 +285,7 @@ class ReportService extends ChangeNotifier {
         _siteDayMoveIns = [];
         _siteDayMoveOuts = [];
         _siteDayOvls = [];
+        _siteDayOvlsRemoved = [];
         _siteDayTasks = [];
         _siteDayReports = [];
         return;
@@ -283,6 +302,9 @@ class ReportService extends ChangeNotifier {
       final ovlsJson = data['ovls'] as List<dynamic>? ?? [];
       _siteDayOvls = ovlsJson.map<Ovl>((j) => Ovl.fromJson(j as Map<String, dynamic>)).toList();
 
+      final ovlsRemovedJson = data['ovls_removed'] as List<dynamic>? ?? [];
+      _siteDayOvlsRemoved = ovlsRemovedJson.map<Ovl>((j) => Ovl.fromJson(j as Map<String, dynamic>)).toList();
+
       final tasksJson = data['tasks'] as List<dynamic>? ?? [];
       _siteDayTasks = tasksJson.map<SiteDayTask>((j) => SiteDayTask.fromJson(j as Map<String, dynamic>)).toList();
 
@@ -293,6 +315,7 @@ class ReportService extends ChangeNotifier {
       _siteDayMoveIns = [];
       _siteDayMoveOuts = [];
       _siteDayOvls = [];
+      _siteDayOvlsRemoved = [];
       _siteDayTasks = [];
       _siteDayReports = [];
     } finally {
