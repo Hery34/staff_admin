@@ -20,6 +20,12 @@ class AgentService extends ChangeNotifier {
   Set<int>? get allowedSiteIds => _allowedSiteIds;
   bool get isAgentRole => _currentAgent?.role == AgentRole.agent;
 
+  /// Gestion des tâches par site : réservée aux responsable et directeur_regionnal.
+  bool get canManageSiteTasks {
+    final role = _currentAgent?.role;
+    return role == AgentRole.responsable || role == AgentRole.directeur_regionnal;
+  }
+
   /// Crée un nouvel agent dans Supabase Auth et dans la table agent
   /// Génère automatiquement un mot de passe fort
   Future<String> createAgent({

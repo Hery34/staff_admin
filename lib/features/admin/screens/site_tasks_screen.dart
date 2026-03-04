@@ -28,6 +28,19 @@ class _SiteTasksScreenState extends State<SiteTasksScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final agentService = context.watch<AgentService>();
+    if (!agentService.canManageSiteTasks) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Gestion des tâches par site')),
+        body: const Center(
+          child: Text(
+            'Vous n\'avez pas les droits pour accéder à cette fonctionnalité.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(

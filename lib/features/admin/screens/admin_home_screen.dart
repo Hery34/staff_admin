@@ -72,6 +72,7 @@ class AdminHomeScreen extends StatelessWidget {
 
           final agentService = context.watch<AgentService>();
           final showCreateAgent = !agentService.isAgentRole;
+          final showSiteTasks = agentService.canManageSiteTasks;
 
           return Center(
             child: Container(
@@ -137,16 +138,17 @@ class AdminHomeScreen extends StatelessWidget {
                     ),
                     4,
                   ),
-                  _buildAnimatedMenuCard(
-                    context,
-                    'Tâches par Site',
-                    Icons.task_alt,
-                    () => _navigateWithAnimation(
+                  if (showSiteTasks)
+                    _buildAnimatedMenuCard(
                       context,
-                      const SiteTasksScreen(),
+                      'Tâches par Site',
+                      Icons.task_alt,
+                      () => _navigateWithAnimation(
+                        context,
+                        const SiteTasksScreen(),
+                      ),
+                      5,
                     ),
-                    5,
-                  ),
                   _buildAnimatedMenuCard(
                     context,
                     'OVL par site',
