@@ -35,6 +35,19 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleWebRecoveryCallback() async {
     final uri = Uri.base;
 
+    final errorCode = uri.queryParameters['error_code'];
+    if (errorCode == 'otp_expired') {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Le lien de réinitialisation est expiré. Demandez un nouveau lien.'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     // Legacy flow: Supabase can return recovery data in URL fragment.
     if (uri.fragment.contains('type=recovery')) {
       if (!mounted) return;
@@ -50,7 +63,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (code == null || code.isEmpty) return;
 
     try {
-      await SupabaseConfig.supabase.auth.exchangeCodeForSession(code);
+      if (SupabaseConfig.supabase.auth.currentSession == null) {
+        await SupabaseConfig.supabase.auth.exchangeCodeForSession(code);
+      }
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil(
         '/reset-password',
@@ -58,6 +73,14 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       debugPrint('Erreur callback reset password: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Lien invalide ou déjà utilisé. Veuillez redemander un email.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
