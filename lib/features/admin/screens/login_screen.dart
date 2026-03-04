@@ -89,17 +89,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                       onSaved: (input) => _passwordController.text = input!,
                     ),
-                    const SizedBox(height: 20),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () => _showForgotPasswordDialog(context, authService),
-                        child: const Text(
-                          'Mot de passe oublié ?',
-                          style: TextStyle(color: redAnnexx),
-                        ),
-                      ),
-                    ),
                     const SizedBox(height: 30),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -249,84 +238,4 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _showForgotPasswordDialog(BuildContext context, AuthService authService) {
-    final emailController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text(
-            'Réinitialisation du mot de passe',
-            style: TextStyle(color: redAnnexx),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Entrez votre adresse email pour recevoir un lien de réinitialisation',
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Annuler'),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (emailController.text.isNotEmpty) {
-                  final result = await authService.resetPassword(emailController.text);
-                  if (!context.mounted) return;
-                  Navigator.of(context).pop();
-                  _showMessageDialog(
-                    context,
-                    'Réinitialisation du mot de passe',
-                    result,
-                  );
-                }
-              },
-              child: const Text(
-                'Envoyer',
-                style: TextStyle(color: redAnnexx),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showMessageDialog(BuildContext context, String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(
-            title,
-            style: const TextStyle(color: redAnnexx),
-          ),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }

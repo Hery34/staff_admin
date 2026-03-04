@@ -228,7 +228,7 @@ class _AgentSitesScreenState extends State<AgentSitesScreen> {
           final siteItems = sites.where((s) {
             final sid = s['id'];
             final i = sid is int ? sid : int.tryParse(sid.toString());
-            return i != null && (excludeSiteIds == null || !excludeSiteIds!.contains(i));
+            return i != null && (excludeSiteIds == null || !excludeSiteIds.contains(i));
           }).toList();
 
           return AlertDialog(

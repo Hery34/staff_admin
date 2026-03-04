@@ -6,7 +6,7 @@ import 'package:staff_admin/features/admin/screens/fire_alert_list_screen.dart';
 import 'package:staff_admin/features/admin/screens/report_list_screen.dart';
 import 'package:staff_admin/features/admin/screens/site_tasks_screen.dart';
 import 'package:staff_admin/features/admin/screens/site_day_activities_screen.dart';
-import 'package:staff_admin/features/admin/screens/create_agent_screen.dart';
+import 'package:staff_admin/features/admin/screens/agent_management_screen.dart';
 import 'package:staff_admin/features/admin/screens/agent_sites_screen.dart';
 import 'package:staff_admin/features/admin/screens/movements_screen.dart';
 import 'package:staff_admin/features/admin/screens/ovl_by_site_screen.dart';
@@ -172,11 +172,11 @@ class AdminHomeScreen extends StatelessWidget {
                   if (showCreateAgent)
                     _buildAnimatedMenuCard(
                       context,
-                      'Créer un agent',
-                      Icons.person_add,
+                      'Gestion des agents',
+                      Icons.people,
                       () => _navigateWithAnimation(
                         context,
-                        const CreateAgentScreen(),
+                        const AgentManagementScreen(),
                       ),
                       8,
                     ),

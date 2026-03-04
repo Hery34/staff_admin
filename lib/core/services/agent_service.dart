@@ -15,6 +15,7 @@ class AgentService extends ChangeNotifier {
   List<Agent> get agents => _agents;
   bool get isLoading => _isLoading;
   Agent? get currentAgent => _currentAgent;
+
   /// Sites autorisés pour l'agent connecté (rôle "agent"). Null = pas de filtre (responsable, directeur).
   Set<int>? get allowedSiteIds => _allowedSiteIds;
   bool get isAgentRole => _currentAgent?.role == AgentRole.agent;
@@ -49,7 +50,8 @@ class AgentService extends ChangeNotifier {
       );
 
       if (authResponse.user == null) {
-        throw Exception('Échec de la création de l\'utilisateur dans Supabase Auth');
+        throw Exception(
+            'Échec de la création de l\'utilisateur dans Supabase Auth');
       }
 
       // 3. Insérer l'agent dans la table agent avec statut en_attente_confirmation
@@ -99,14 +101,9 @@ class AgentService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final response = await _supabase
-          .from('agent')
-          .select()
-          .order('lastname');
+      final response = await _supabase.from('agent').select().order('lastname');
 
-      _agents = (response as List)
-          .map((json) => Agent.fromJson(json))
-          .toList();
+      _agents = (response as List).map((json) => Agent.fromJson(json)).toList();
     } catch (e) {
       debugPrint('Erreur lors du chargement des agents: $e');
       _agents = [];
@@ -153,10 +150,9 @@ class AgentService extends ChangeNotifier {
             .eq('agent_id', agent.id);
 
         // Supabase retourne toujours une List ; gérer les deux cas par sécurité
-        final rows = response is List ? response : (response != null ? [response] : <dynamic>[]);
+        final rows = response;
         final ids = <int>{};
         for (final item in rows) {
-          if (item is! Map) continue;
           final id = item['site_id'];
           if (id != null) {
             try {
@@ -167,7 +163,8 @@ class AgentService extends ChangeNotifier {
           }
         }
         _allowedSiteIds = ids;
-        debugPrint('Agent ${agent.id}: ${ids.length} site(s) autorisé(s) -> $ids');
+        debugPrint(
+            'Agent ${agent.id}: ${ids.length} site(s) autorisé(s) -> $ids');
       }
       notifyListeners();
     } catch (e) {
@@ -185,7 +182,51 @@ class AgentService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Appelle le webhook n8n pour envoyer l'email de bienvenue
+  /// Récupère un agent par son id
+  Future<Agent?> getAgentById(int id) async {
+    try {
+      final response = await _supabase
+          .from('agent')
+          .select()
+          .eq('id', id)
+          .maybeSingle();
+
+      if (response == null) return null;
+      return Agent.fromJson(response);
+    } catch (e) {
+      debugPrint('Erreur getAgentById: $e');
+      return null;
+    }
+  }
+
+  /// Réinitialise le mot de passe d'un agent : génère une nouvelle passphrase,
+  /// appelle le webhook n8n (qui met à jour Supabase et envoie l'email).
+  Future<String> resetAgentPassword(Agent agent) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final generatedPassword = generateStrongPassword();
+
+      await callResetPasswordWebhook(
+        email: agent.email,
+        nom: agent.lastname,
+        prenom: agent.firstname,
+        motDePasseTemp: generatedPassword,
+        role: agent.role.displayName,
+      );
+
+      return 'Un nouveau mot de passe a été envoyé par email à ${agent.email}.';
+    } catch (e) {
+      debugPrint('Erreur resetAgentPassword: $e');
+      return 'Erreur lors de la réinitialisation: ${e.toString()}';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Appelle le webhook n8n pour envoyer l'email de bienvenue (création)
   Future<void> callValidationWebhook({
     required String email,
     required String nom,
@@ -193,8 +234,9 @@ class AgentService extends ChangeNotifier {
     required String motDePasseTemp,
     required String role,
   }) async {
-    const webhookUrl = 'https://automation-annexx-n8n.zcbxvg.easypanel.host/webhook/validate_account';
-    
+    const webhookUrl =
+        'https://automation-annexx-n8n.zcbxvg.easypanel.host/webhook/validate_account';
+
     try {
       final response = await http.post(
         Uri.parse(webhookUrl),
@@ -213,11 +255,53 @@ class AgentService extends ChangeNotifier {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         debugPrint('Webhook n8n appelé avec succès pour $email');
       } else {
-        debugPrint('Erreur lors de l\'appel au webhook n8n: ${response.statusCode} - ${response.body}');
+        debugPrint(
+            'Erreur lors de l\'appel au webhook n8n: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       debugPrint('Erreur lors de l\'appel au webhook n8n: $e');
       // Ne pas faire échouer si le webhook échoue
+    }
+  }
+
+  /// Appelle le webhook n8n pour envoyer le nouveau mot de passe (réinitialisation)
+  Future<void> callResetPasswordWebhook({
+    required String email,
+    required String nom,
+    required String prenom,
+    required String motDePasseTemp,
+    required String role,
+  }) async {
+    const webhookUrl =
+        'https://automation-annexx-n8n.zcbxvg.easypanel.host/webhook/b498c1b9-f85d-498c-9bfb-bafdb3757c8e';
+
+    try {
+      final response = await http.post(
+        Uri.parse(webhookUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'action': 'reset',
+          'email': email,
+          'nom': nom,
+          'prenom': prenom,
+          'mot_de_passe_temporaire': motDePasseTemp,
+          'role': role,
+        }),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        debugPrint('Webhook n8n reset appelé avec succès pour $email');
+      } else {
+        debugPrint(
+            'Erreur webhook n8n reset: ${response.statusCode} - ${response.body}');
+        throw Exception(
+            'Échec du webhook: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Erreur callResetPasswordWebhook: $e');
+      rethrow;
     }
   }
 }
