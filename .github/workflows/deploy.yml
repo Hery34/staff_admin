@@ -18,6 +18,7 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      AUTH_REDIRECT_URL: https://hery34.github.io/staff_admin/
 
     steps:
       - name: Checkout
@@ -40,7 +41,7 @@ jobs:
         run: flutter pub get
         
       - name: Build
-        run: flutter build web --base-href /staff_admin/ --dart-define=SUPABASE_URL=$SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY --dart-define=IS_PRODUCTION=true
+        run: flutter build web --base-href /staff_admin/ --dart-define=SUPABASE_URL=$SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY --dart-define=AUTH_REDIRECT_URL=$AUTH_REDIRECT_URL --dart-define=IS_PRODUCTION=true
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

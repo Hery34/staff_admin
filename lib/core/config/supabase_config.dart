@@ -10,6 +10,14 @@ class SupabaseConfig {
       ? const String.fromEnvironment('SUPABASE_URL')
       : dotenv.env['SUPABASE_URL'] ?? '';
 
+  /// URL de redirection pour le reset mot de passe (doit être dans Supabase Redirect URLs).
+  static String get authRedirectUrl => const String.fromEnvironment(
+    'AUTH_REDIRECT_URL',
+    defaultValue: '',
+  ).isNotEmpty
+      ? const String.fromEnvironment('AUTH_REDIRECT_URL')
+      : dotenv.env['AUTH_REDIRECT_URL'] ?? '';
+
   static String get supabaseAnonKey => const String.fromEnvironment(
     'SUPABASE_ANON_KEY',
     defaultValue: '',

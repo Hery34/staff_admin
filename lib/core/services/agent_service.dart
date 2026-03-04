@@ -205,7 +205,12 @@ class AgentService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      await _supabase.auth.resetPasswordForEmail(agent.email);
+      await _supabase.auth.resetPasswordForEmail(
+        agent.email,
+        redirectTo: SupabaseConfig.authRedirectUrl.isNotEmpty
+            ? SupabaseConfig.authRedirectUrl
+            : null,
+      );
 
       return 'Un lien de réinitialisation a été envoyé par email à ${agent.email}.';
     } on AuthException catch (e) {
@@ -265,7 +270,12 @@ class AgentService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      await _supabase.auth.resetPasswordForEmail(email);
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: SupabaseConfig.authRedirectUrl.isNotEmpty
+            ? SupabaseConfig.authRedirectUrl
+            : null,
+      );
 
       return "Un lien de réinitialisation a été envoyé à $email.";
     } on AuthException catch (e) {
