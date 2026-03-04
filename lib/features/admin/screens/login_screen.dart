@@ -89,6 +89,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                       onSaved: (input) => _passwordController.text = input!,
                     ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => _showForgotPasswordDialog(context),
+                        child: const Text(
+                          'Mot de passe oublié ?',
+                          style: TextStyle(color: redAnnexx),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 30),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -213,6 +224,81 @@ class _LoginScreenState extends State<LoginScreen> {
         _showErrorDialog(context, result);
       }
     }
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    final emailController = TextEditingController(text: _emailController.text);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Mot de passe oublié',
+          style: TextStyle(color: redAnnexx),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Entrez votre adresse email pour recevoir un nouveau mot de passe par email.',
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final email = emailController.text.trim();
+              if (email.isEmpty) return;
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Format d\'email invalide'),
+                    backgroundColor: Colors.orange,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
+              Navigator.of(context).pop();
+              final agentService = Provider.of<AgentService>(context, listen: false);
+              final result = await agentService.requestPasswordResetByEmail(email);
+              if (!context.mounted) return;
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Mot de passe oublié', style: TextStyle(color: redAnnexx)),
+                  content: Text(result),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: const Text(
+              'Envoyer',
+              style: TextStyle(color: redAnnexx),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showErrorDialog(BuildContext context, String message) {

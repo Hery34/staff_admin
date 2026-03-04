@@ -264,7 +264,57 @@ class AgentService extends ChangeNotifier {
     }
   }
 
-  /// Appelle le webhook n8n pour envoyer le nouveau mot de passe (réinitialisation)
+  /// Demande une réinitialisation de mot de passe par email (écran de connexion).
+  /// Le webhook n8n récupère l'agent, génère une passphrase, met à jour Supabase et envoie l'email.
+  Future<String> requestPasswordResetByEmail(String email) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      await callForgotPasswordWebhook(email: email);
+
+      return "Un email de réinitialisation a été envoyé à $email.";
+    } catch (e) {
+      debugPrint('Erreur requestPasswordResetByEmail: $e');
+      return "Erreur lors de l'envoi. Vérifiez que l'email existe ou contactez l'administrateur.";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Met à jour le code PIN de l'agent connecté (écran Mon compte).
+  Future<String> updateMyPinCode(int? pinCode) async {
+    try {
+      final agent = _currentAgent;
+      if (agent == null) {
+        return "Session expirée. Veuillez vous reconnecter.";
+      }
+
+      await _supabase
+          .from('agent')
+          .update({'pin_code': pinCode})
+          .eq('id', agent.id);
+
+      _currentAgent = Agent(
+        id: agent.id,
+        firstname: agent.firstname,
+        lastname: agent.lastname,
+        email: agent.email,
+        pinCode: pinCode,
+        role: agent.role,
+        statutCompte: agent.statutCompte,
+      );
+      notifyListeners();
+
+      return "Code PIN mis à jour.";
+    } catch (e) {
+      debugPrint('Erreur updateMyPinCode: $e');
+      return "Erreur lors de la mise à jour du code PIN.";
+    }
+  }
+
+  /// Appelle le webhook n8n pour envoyer le nouveau mot de passe (réinitialisation admin)
   Future<void> callResetPasswordWebhook({
     required String email,
     required String nom,
@@ -302,6 +352,27 @@ class AgentService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Erreur callResetPasswordWebhook: $e');
       rethrow;
+    }
+  }
+
+  /// Appelle le webhook n8n pour "mot de passe oublié" (connexion).
+  /// Envoie uniquement l'email ; n8n récupère l'agent, génère la passphrase, met à jour Supabase et envoie l'email.
+  Future<void> callForgotPasswordWebhook({required String email}) async {
+    const webhookUrl =
+        'https://automation-annexx-n8n.zcbxvg.easypanel.host/webhook/b498c1b9-f85d-498c-9bfb-bafdb3757c8e';
+
+    final response = await http.post(
+      Uri.parse(webhookUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'action': 'reset',
+        'email': email,
+      }),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      debugPrint('Erreur callForgotPasswordWebhook: ${response.statusCode} - ${response.body}');
+      throw Exception('Échec de l\'envoi: ${response.statusCode}');
     }
   }
 }

@@ -8,6 +8,7 @@ import 'package:staff_admin/features/admin/screens/site_tasks_screen.dart';
 import 'package:staff_admin/features/admin/screens/site_day_activities_screen.dart';
 import 'package:staff_admin/features/admin/screens/agent_management_screen.dart';
 import 'package:staff_admin/features/admin/screens/agent_sites_screen.dart';
+import 'package:staff_admin/features/admin/screens/my_account_screen.dart';
 import 'package:staff_admin/features/admin/screens/movements_screen.dart';
 import 'package:staff_admin/features/admin/screens/ovl_by_site_screen.dart';
 import 'package:staff_admin/features/admin/screens/stats_screen.dart';
@@ -158,6 +159,16 @@ class AdminHomeScreen extends StatelessWidget {
                     ),
                     6,
                   ),
+                  _buildAnimatedMenuCard(
+                    context,
+                    'Mon compte',
+                    Icons.person,
+                    () => _navigateWithAnimation(
+                      context,
+                      const MyAccountScreen(),
+                    ),
+                    7,
+                  ),
                   if (showCreateAgent)
                     _buildAnimatedMenuCard(
                       context,
@@ -167,7 +178,7 @@ class AdminHomeScreen extends StatelessWidget {
                         context,
                         const AgentSitesScreen(),
                       ),
-                      7,
+                      8,
                     ),
                   if (showCreateAgent)
                     _buildAnimatedMenuCard(
@@ -178,7 +189,7 @@ class AdminHomeScreen extends StatelessWidget {
                         context,
                         const AgentManagementScreen(),
                       ),
-                      8,
+                      9,
                     ),
                 ],
               ),
