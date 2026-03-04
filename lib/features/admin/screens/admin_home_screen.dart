@@ -84,10 +84,8 @@ class AdminHomeScreen extends StatelessWidget {
                 mainAxisSpacing: padding,
                 crossAxisSpacing: padding,
                 childAspectRatio: isWebOrDesktop ? 1.5 : 1.3,
-                shrinkWrap: isWebOrDesktop,
-                physics: isWebOrDesktop
-                    ? const NeverScrollableScrollPhysics()
-                    : const AlwaysScrollableScrollPhysics(),
+                shrinkWrap: false,
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   _buildAnimatedMenuCard(
                     context,
