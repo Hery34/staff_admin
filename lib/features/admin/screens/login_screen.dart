@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:staff_admin/core/config/supabase_config.dart';
 import 'package:staff_admin/core/constants/colors.dart';
 import 'package:staff_admin/core/models/agent.dart';
 import 'package:staff_admin/core/services/auth_service.dart';
@@ -25,15 +26,38 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     if (kIsWeb) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final fragment = Uri.base.fragment;
-        if (fragment.contains('type=recovery')) {
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/reset-password',
-            (route) => false,
-          );
-        }
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _handleWebRecoveryCallback();
       });
+    }
+  }
+
+  Future<void> _handleWebRecoveryCallback() async {
+    final uri = Uri.base;
+
+    // Legacy flow: Supabase can return recovery data in URL fragment.
+    if (uri.fragment.contains('type=recovery')) {
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/reset-password',
+        (route) => false,
+      );
+      return;
+    }
+
+    // PKCE flow: Supabase redirects with a short-lived code in query string.
+    final code = uri.queryParameters['code'];
+    if (code == null || code.isEmpty) return;
+
+    try {
+      await SupabaseConfig.supabase.auth.exchangeCodeForSession(code);
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/reset-password',
+        (route) => false,
+      );
+    } catch (e) {
+      debugPrint('Erreur callback reset password: $e');
     }
   }
 

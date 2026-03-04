@@ -45,6 +45,9 @@ class AuthService extends ChangeNotifier {
           
       await _supabase.auth.resetPasswordForEmail(
         email,
+        redirectTo: SupabaseConfig.authRedirectUrl.isNotEmpty
+            ? SupabaseConfig.authRedirectUrl
+            : null,
       );
       return "Un email de réinitialisation vous a été envoyé";
     } on AuthException catch (e) {
