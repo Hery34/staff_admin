@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:staff_admin/core/constants/colors.dart';
@@ -19,6 +20,22 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscureText = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final fragment = Uri.base.fragment;
+        if (fragment.contains('type=recovery')) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/reset-password',
+            (route) => false,
+          );
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -241,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Entrez votre adresse email pour recevoir un nouveau mot de passe par email.',
+              'Entrez votre adresse email pour recevoir un lien de réinitialisation par email.',
             ),
             const SizedBox(height: 20),
             TextField(

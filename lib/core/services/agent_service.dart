@@ -199,24 +199,18 @@ class AgentService extends ChangeNotifier {
     }
   }
 
-  /// Réinitialise le mot de passe d'un agent : génère une nouvelle passphrase,
-  /// appelle le webhook n8n (qui met à jour Supabase et envoie l'email).
+  /// Réinitialise le mot de passe d'un agent : envoie l'email de réinitialisation Supabase.
   Future<String> resetAgentPassword(Agent agent) async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      final generatedPassword = generateStrongPassword();
+      await _supabase.auth.resetPasswordForEmail(agent.email);
 
-      await callResetPasswordWebhook(
-        email: agent.email,
-        nom: agent.lastname,
-        prenom: agent.firstname,
-        motDePasseTemp: generatedPassword,
-        role: agent.role.displayName,
-      );
-
-      return 'Un nouveau mot de passe a été envoyé par email à ${agent.email}.';
+      return 'Un lien de réinitialisation a été envoyé par email à ${agent.email}.';
+    } on AuthException catch (e) {
+      debugPrint('Erreur resetAgentPassword: $e');
+      return e.message;
     } catch (e) {
       debugPrint('Erreur resetAgentPassword: $e');
       return 'Erreur lors de la réinitialisation: ${e.toString()}';
@@ -265,18 +259,21 @@ class AgentService extends ChangeNotifier {
   }
 
   /// Demande une réinitialisation de mot de passe par email (écran de connexion).
-  /// Le webhook n8n récupère l'agent, génère une passphrase, met à jour Supabase et envoie l'email.
+  /// Utilise l'email de réinitialisation natif de Supabase.
   Future<String> requestPasswordResetByEmail(String email) async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      await callForgotPasswordWebhook(email: email);
+      await _supabase.auth.resetPasswordForEmail(email);
 
-      return "Un email de réinitialisation a été envoyé à $email.";
+      return "Un lien de réinitialisation a été envoyé à $email.";
+    } on AuthException catch (e) {
+      debugPrint('Erreur requestPasswordResetByEmail: $e');
+      return e.message;
     } catch (e) {
       debugPrint('Erreur requestPasswordResetByEmail: $e');
-      return "Erreur lors de l'envoi. Vérifiez que l'email existe ou contactez l'administrateur.";
+      return "Erreur lors de l'envoi. Vérifiez votre email ou contactez l'administrateur.";
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -314,65 +311,4 @@ class AgentService extends ChangeNotifier {
     }
   }
 
-  /// Appelle le webhook n8n pour envoyer le nouveau mot de passe (réinitialisation admin)
-  Future<void> callResetPasswordWebhook({
-    required String email,
-    required String nom,
-    required String prenom,
-    required String motDePasseTemp,
-    required String role,
-  }) async {
-    const webhookUrl =
-        'https://automation-annexx-n8n.zcbxvg.easypanel.host/webhook/b498c1b9-f85d-498c-9bfb-bafdb3757c8e';
-
-    try {
-      final response = await http.post(
-        Uri.parse(webhookUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'action': 'reset',
-          'email': email,
-          'nom': nom,
-          'prenom': prenom,
-          'mot_de_passe_temporaire': motDePasseTemp,
-          'role': role,
-        }),
-      );
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        debugPrint('Webhook n8n reset appelé avec succès pour $email');
-      } else {
-        debugPrint(
-            'Erreur webhook n8n reset: ${response.statusCode} - ${response.body}');
-        throw Exception(
-            'Échec du webhook: ${response.statusCode} - ${response.body}');
-      }
-    } catch (e) {
-      debugPrint('Erreur callResetPasswordWebhook: $e');
-      rethrow;
-    }
-  }
-
-  /// Appelle le webhook n8n pour "mot de passe oublié" (connexion).
-  /// Envoie uniquement l'email ; n8n récupère l'agent, génère la passphrase, met à jour Supabase et envoie l'email.
-  Future<void> callForgotPasswordWebhook({required String email}) async {
-    const webhookUrl =
-        'https://automation-annexx-n8n.zcbxvg.easypanel.host/webhook/b498c1b9-f85d-498c-9bfb-bafdb3757c8e';
-
-    final response = await http.post(
-      Uri.parse(webhookUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'action': 'reset',
-        'email': email,
-      }),
-    );
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      debugPrint('Erreur callForgotPasswordWebhook: ${response.statusCode} - ${response.body}');
-      throw Exception('Échec de l\'envoi: ${response.statusCode}');
-    }
-  }
 }

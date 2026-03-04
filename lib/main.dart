@@ -10,10 +10,24 @@ import 'package:staff_admin/core/services/agent_site_service.dart';
 import 'package:staff_admin/core/services/stats_service.dart';
 import 'package:staff_admin/features/admin/screens/login_screen.dart';
 import 'package:staff_admin/features/admin/screens/admin_home_screen.dart';
+import 'package:staff_admin/features/admin/screens/reset_password_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final _navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseConfig.initialize();
+
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    if (data.event == AuthChangeEvent.passwordRecovery) {
+      _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/reset-password',
+        (route) => false,
+      );
+    }
+  });
+
   runApp(
     MultiProvider(
       providers: [
@@ -46,6 +60,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => StatsService()),
       ],
       child: MaterialApp(
+        navigatorKey: _navigatorKey,
         title: 'Staff Admin Annexx',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -91,6 +106,7 @@ class MyApp extends StatelessWidget {
         routes: {
           '/login': (context) => const LoginScreen(),
           '/home': (context) => const AdminHomeScreen(),
+          '/reset-password': (context) => const ResetPasswordScreen(),
         },
         home: const LoginScreen(),
       ),
